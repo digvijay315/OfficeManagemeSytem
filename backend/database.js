@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
     try {
-        await mongoose.connect('mongodb://127.0.0.1:27017/officeStaffManagement');
+        await mongoose.connect('mongodb+srv://digvijay:digvijay@cluster0.yisihts.mongodb.net/officeStaffManagement?retryWrites=true&w=majority');
+        
         console.log('MongoDB connected successfully');
         
         // Ensure default admin exists
