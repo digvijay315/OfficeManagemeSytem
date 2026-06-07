@@ -4,7 +4,7 @@ const {
     getStaff, createStaff, updateStaff, deleteStaff,
     assignTask, getGroupedTasks, recordFund, getFundsSummary, paySalary,
     getAttendance, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
-    getDashboardStats
+    getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -25,6 +25,9 @@ router.get('/tasks/grouped', getGroupedTasks);
 
 router.post('/funds', recordFund);
 router.get('/funds/summary/:month', getFundsSummary);
+router.get('/funds/requests', getAdvanceRequests);
+router.get('/funds/history', getAdvanceHistory);
+router.put('/funds/request/:id', updateAdvanceRequest);
 
 router.post('/pay-salary', paySalary);
 

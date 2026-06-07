@@ -1,5 +1,6 @@
 const Task = require('../models/Task');
 const Fund = require('../models/Fund');
+const SalaryPayment = require('../models/SalaryPayment');
 const Attendance = require('../models/Attendance');
 
 const mongoose = require('mongoose');
@@ -28,30 +29,54 @@ const getGroupedTasks = async (req, res) => {
 };
 
 const updateTask = async (req, res) => {
-    const { status, comment } = req.body;
-    await Task.findOneAndUpdate({ _id: req.params.id, staff_id: req.user._id }, { status, comment });
+    const { status, comment, images } = req.body;
+    await Task.findOneAndUpdate({ _id: req.params.id, staff_id: req.user._id }, { status, comment, images });
     res.json({ success: true });
 };
 
 const createAdditionalTask = async (req, res) => {
-    const { title, description, date, type } = req.body;
+    const { title, description, date, type, images } = req.body;
     const task = await Task.create({ 
         staff_id: req.user._id, 
         title, 
         description, 
         date, 
         type: type || 'additional', 
-        status: 'completed' 
+        status: 'completed',
+        images: images || []
     });
     res.json(task);
 };
 
 const getFunds = async (req, res) => {
-    const funds = await Fund.find({ staff_id: req.user._id }).sort({ date: -1 });
-    const totalTaken = funds.reduce((sum, f) => sum + f.amount, 0);
+    const { month } = req.query;
+    
+    let query = { staff_id: req.user._id };
+    if (month) {
+        query.date = { $regex: `^${month}` };
+    }
+
+    const funds = await Fund.find(query).sort({ date: -1 });
+    
+    let salaryQuery = { staff_id: req.user._id };
+    if (month) {
+        salaryQuery.month = month;
+    }
+    const salaryPayments = await SalaryPayment.find(salaryQuery).sort({ date: -1 });
+
+    const combined = [
+        ...funds.map(f => ({ ...f.toObject(), type: 'advance' })),
+        ...salaryPayments.map(s => ({ ...s.toObject(), type: 'salary', description: `Final Salary for ${s.month}`, status: 'approved' }))
+    ];
+    
+    combined.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const approvedFunds = combined.filter(f => f.type === 'advance' && f.status === 'approved');
+    const totalTaken = approvedFunds.reduce((sum, f) => sum + f.amount, 0);
     const salary = req.user.salary;
     const remaining = salary - totalTaken;
-    res.json({ salary, totalTaken, remaining, funds });
+
+    res.json({ salary, totalTaken, remaining, funds: combined });
 };
 
 const getTodayAttendance = async (req, res) => {
@@ -84,8 +109,24 @@ const stopAttendance = async (req, res) => {
     res.json({ success: true });
 };
 
+const requestAdvance = async (req, res) => {
+    const { amount, description, date } = req.body;
+    try {
+        const fund = await Fund.create({
+            staff_id: req.user._id,
+            amount,
+            description,
+            date,
+            status: 'pending'
+        });
+        res.json(fund);
+    } catch (err) {
+        res.status(500).json({ error: 'Error requesting advance' });
+    }
+};
+
 module.exports = {
     getTasks, getGroupedTasks, updateTask, createAdditionalTask,
-    getFunds,
+    getFunds, requestAdvance,
     getTodayAttendance, startAttendance, stopAttendance
 };

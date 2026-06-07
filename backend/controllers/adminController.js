@@ -128,7 +128,7 @@ const getFundsSummary = async (req, res) => {
             return joinedMonth <= month;
         });
 
-        const allFunds = await Fund.find({ date: { $regex: `^${month}` } });
+        const allFunds = await Fund.find({ date: { $regex: `^${month}` }, status: 'approved' });
         const allPayments = await SalaryPayment.find({ month });
 
         const summary = staffMembers.map(staff => {
@@ -156,10 +156,10 @@ const getFundsSummary = async (req, res) => {
 };
 
 const paySalary = async (req, res) => {
-    const { staff_id, month, amount } = req.body;
+    const { staff_id, month, amount, slipUrl } = req.body;
     const date = new Date().toISOString().split('T')[0];
     try {
-        const payment = await SalaryPayment.create({ staff_id, month, amount, date });
+        const payment = await SalaryPayment.create({ staff_id, month, amount, date, slipUrl });
         res.json(payment);
     } catch (err) {
         res.status(400).json({ error: 'Error recording salary payment' });
@@ -270,9 +270,98 @@ const getDashboardStats = async (req, res) => {
     }
 };
 
+const getAdvanceRequests = async (req, res) => {
+    try {
+        const requests = await Fund.find({ status: 'pending' }).populate('staff_id', 'name email Upload').sort({ _id: -1 });
+        const transformed = requests.map(r => ({
+            id: r._id,
+            staff_id: r.staff_id._id,
+            name: r.staff_id.name,
+            email: r.staff_id.email,
+            pic: r.staff_id?.Upload?.pic?.[0] || null,
+            amount: r.amount,
+            date: r.date,
+            description: r.description
+        }));
+        res.json(transformed);
+    } catch (err) {
+        res.status(500).json({ error: 'Error fetching advance requests' });
+    }
+};
+
+const getAdvanceHistory = async (req, res) => {
+    const { page, limit, skip } = getPagination(req);
+    const { month, staff_id } = req.query;
+
+    const query = { status: { $ne: 'pending' } }; // fetch approved and rejected
+    const salaryQuery = {};
+    
+    if (month) {
+        query.date = { $regex: `^${month}` };
+        salaryQuery.month = month;
+    }
+    if (staff_id) {
+        query.staff_id = new mongoose.Types.ObjectId(staff_id);
+        salaryQuery.staff_id = new mongoose.Types.ObjectId(staff_id);
+    }
+
+    try {
+        const funds = await Fund.find(query).populate('staff_id', 'name email Upload').sort({ _id: -1 });
+        const salaryPayments = await SalaryPayment.find(salaryQuery).populate('staff_id', 'name email Upload').sort({ _id: -1 });
+        
+        let combined = [
+            ...funds.map(r => ({
+                id: r._id,
+                name: r.staff_id?.name || 'Unknown',
+                email: r.staff_id?.email || '',
+                pic: r.staff_id?.Upload?.pic?.[0] || null,
+                amount: r.amount,
+                date: r.date,
+                description: r.description,
+                status: r.status,
+                slipUrl: r.slipUrl,
+                type: 'advance'
+            })),
+            ...salaryPayments.map(r => ({
+                id: r._id,
+                name: r.staff_id?.name || 'Unknown',
+                email: r.staff_id?.email || '',
+                pic: r.staff_id?.Upload?.pic?.[0] || null,
+                amount: r.amount,
+                date: r.date,
+                description: `Final Salary for ${r.month}`,
+                status: 'approved',
+                slipUrl: r.slipUrl,
+                type: 'salary'
+            }))
+        ];
+
+        // Sort by date descending
+        combined.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        const total = combined.length;
+        const paginatedData = combined.slice(skip, skip + limit);
+
+        res.json({ data: paginatedData, total, page, pages: Math.ceil(total / limit) });
+    } catch (err) {
+        res.status(500).json({ error: 'Error fetching history' });
+    }
+};
+
+const updateAdvanceRequest = async (req, res) => {
+    const { id } = req.params;
+    const { status, slipUrl } = req.body;
+    try {
+        const fund = await Fund.findByIdAndUpdate(id, { status, slipUrl }, { new: true });
+        res.json(fund);
+    } catch (err) {
+        res.status(500).json({ error: 'Error updating advance request' });
+    }
+};
+
 module.exports = {
     getStaff, createStaff, updateStaff, deleteStaff,
     assignTask, getGroupedTasks, recordFund, getFundsSummary, paySalary,
     getAttendance, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
-    getDashboardStats
+    getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest
 };

@@ -25,9 +25,22 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-emerald-500 to-teal-600 p-4">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Staff Portal</h1>
-          <p className="text-gray-500 mt-2">student.inet Employee Login</p>
+        <div className="text-center mb-6">
+          <img 
+            src="/logo.png" 
+            alt="S. NET DIGITAL BROADBAND" 
+            className="w-48 mx-auto mb-4 object-contain" 
+            style={{ clipPath: 'inset(4px)' }} 
+          />
+          <h1 className="text-2xl font-extrabold text-gray-800">S. NET DIGITAL BROADBAND</h1>
+          <p className="text-sm text-gray-500 mt-1 font-medium">Near LIC office, Lal Pokhra Dumka</p>
+          <div className="text-xs text-gray-400 mt-2 space-y-0.5">
+            <p>Phone: 7004451454 | Email: snetdumka@gmail.com</p>
+            <p>GSTIN: 20BXRPP5495H1ZY | State: 20-Jharkhand</p>
+          </div>
+          <div className="mt-4 border-t border-gray-100 pt-4">
+            <h2 className="text-lg font-bold text-emerald-600">Staff Portal</h2>
+          </div>
         </div>
         
         {error && <div className="bg-red-50 text-red-500 p-3 rounded mb-4 text-center">{error}</div>}

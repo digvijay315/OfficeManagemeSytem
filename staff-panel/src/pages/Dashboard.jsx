@@ -39,8 +39,8 @@ export default function Dashboard() {
       `}>
         <div className={`p-6 flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'} border-b border-emerald-700`}>
           <div className={`${!sidebarOpen && 'md:hidden'}`}>
-            <h2 className="text-xl font-bold tracking-wider">Staff Portal</h2>
-            <p className="text-emerald-300 text-xs mt-1">student.inet</p>
+            <h2 className="text-xl font-bold tracking-wider">S. NET Staff</h2>
+            <p className="text-emerald-300 text-xs mt-1">Digital Broadband</p>
           </div>
           <h2 className={`text-xl font-bold hidden md:block ${sidebarOpen && 'md:hidden'}`}>S</h2>
         </div>

@@ -4,6 +4,8 @@ import { AlertCircle, CheckCircle, Clock, PlusCircle, ChevronDown, ChevronUp, Al
 
 const TaskCard = ({ task, onComplete }) => {
   const [comment, setComment] = useState('');
+  const [files, setFiles] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   return (
     <div className={`p-4 rounded-xl border ${task.type === 'emergency' ? 'border-red-200 bg-red-50' : 'border-white bg-white'} shadow-sm`}>
@@ -29,17 +31,39 @@ const TaskCard = ({ task, onComplete }) => {
             value={comment}
             onChange={(e) => setComment(e.target.value)}
           />
+          <input 
+            type="file" 
+            multiple
+            accept="image/*"
+            onChange={(e) => setFiles(Array.from(e.target.files))}
+            className="w-full text-sm text-gray-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 outline-none border border-gray-200 rounded-lg cursor-pointer"
+          />
           <button 
-            onClick={() => onComplete(task._id, comment)}
-            className={`w-full py-2 rounded-lg text-white text-sm font-bold transition-colors flex justify-center items-center gap-2 ${task.type === 'emergency' ? 'bg-red-600 hover:bg-red-700 shadow-sm shadow-red-200' : 'bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200'}`}
+            disabled={isUploading}
+            onClick={async () => {
+              setIsUploading(true);
+              await onComplete(task._id, comment, files);
+              setIsUploading(false);
+            }}
+            className={`w-full py-2 rounded-lg text-white text-sm font-bold transition-colors flex justify-center items-center gap-2 disabled:opacity-70 ${task.type === 'emergency' ? 'bg-red-600 hover:bg-red-700 shadow-sm shadow-red-200' : 'bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200'}`}
           >
-            <CheckCircle size={16} /> Mark as Completed
+            {isUploading ? <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div> : <CheckCircle size={16} />}
+            {isUploading ? 'Uploading...' : 'Mark as Completed'}
           </button>
         </div>
       ) : (
         <div className="mt-4 pt-3 border-t border-gray-100">
           <p className="text-sm text-emerald-600 flex items-center gap-1 font-semibold"><CheckCircle size={14}/> Completed</p>
           {task.comment && <p className="text-xs text-gray-500 mt-1 bg-gray-50 p-2 rounded border border-gray-100">"{task.comment}"</p>}
+          {task.images && task.images.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {task.images.map((img, i) => (
+                <a key={i} href={img} target="_blank" rel="noreferrer" className="block relative w-12 h-12 rounded-md overflow-hidden border border-gray-200 hover:border-blue-400 transition-colors">
+                  <img src={img} alt="Task proof" className="w-full h-full object-cover" />
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -50,6 +74,8 @@ export default function TaskList() {
   const [groupedTasks, setGroupedTasks] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', description: '' });
+  const [newFiles, setNewFiles] = useState([]);
+  const [isAdding, setIsAdding] = useState(false);
   const [expandedRows, setExpandedRows] = useState({});
   
   // Pagination
@@ -77,9 +103,21 @@ export default function TaskList() {
     fetchGroupedTasks(page);
   }, [page]);
 
-  const handleComplete = async (taskId, submittedComment) => {
+  const handleComplete = async (taskId, submittedComment, selectedFiles) => {
     try {
-      await api.put(`/staff/tasks/${taskId}`, { status: 'completed', comment: submittedComment || '' });
+      let imageUrls = [];
+      if (selectedFiles && selectedFiles.length > 0) {
+        const formData = new FormData();
+        selectedFiles.forEach(file => formData.append('files', file));
+        const uploadRes = await api.post('/upload/upload-files', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        if (uploadRes.data.success) {
+          imageUrls = uploadRes.data.urls;
+        }
+      }
+
+      await api.put(`/staff/tasks/${taskId}`, { status: 'completed', comment: submittedComment || '', images: imageUrls });
       // Refresh the current page
       fetchGroupedTasks(page);
     } catch (err) {
@@ -89,13 +127,29 @@ export default function TaskList() {
 
   const handleAddAdditionalTask = async (e) => {
     e.preventDefault();
+    setIsAdding(true);
     try {
-      await api.post('/staff/tasks', { ...newTask, date: new Date().toISOString().split('T')[0], type: 'additional' });
+      let imageUrls = [];
+      if (newFiles && newFiles.length > 0) {
+        const formData = new FormData();
+        newFiles.forEach(file => formData.append('files', file));
+        const uploadRes = await api.post('/upload/upload-files', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        if (uploadRes.data.success) {
+          imageUrls = uploadRes.data.urls;
+        }
+      }
+
+      await api.post('/staff/tasks', { ...newTask, date: new Date().toISOString().split('T')[0], type: 'additional', images: imageUrls });
       setShowAddModal(false);
       setNewTask({ title: '', description: '' });
+      setNewFiles([]);
       fetchGroupedTasks(1); // Back to page 1 to see the new task
     } catch (err) {
       alert('Error adding task');
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -289,19 +343,31 @@ export default function TaskList() {
                   placeholder="Briefly describe what was done..."
                 ></textarea>
               </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Upload Images (Optional)</label>
+                <input 
+                  type="file" 
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => setNewFiles(Array.from(e.target.files))}
+                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 outline-none border border-gray-300 rounded-xl cursor-pointer"
+                />
+              </div>
               <div className="flex gap-3 pt-4">
                 <button 
                   type="button" 
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition-colors"
+                  disabled={isAdding}
+                  onClick={() => {setShowAddModal(false); setNewFiles([]);}}
+                  className="flex-1 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
-                  className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-md shadow-blue-200 transition-colors"
+                  disabled={isAdding}
+                  className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-md shadow-blue-200 transition-colors flex justify-center items-center"
                 >
-                  Save Task
+                  {isAdding ? <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div> : 'Save Task'}
                 </button>
               </div>
             </form>

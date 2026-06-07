@@ -44,8 +44,8 @@ export default function Layout() {
       `}>
         <div className={`p-6 flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'} border-b border-indigo-800`}>
           <div className={`${!sidebarOpen && 'md:hidden'}`}>
-            <h2 className="text-xl font-bold tracking-wider">Admin Panel</h2>
-            <p className="text-indigo-300 text-xs mt-1">student.inet</p>
+            <h2 className="text-xl font-bold tracking-wider">S. NET Admin</h2>
+            <p className="text-indigo-300 text-xs mt-1">Digital Broadband</p>
           </div>
           <h2 className={`text-xl font-bold hidden md:block ${sidebarOpen && 'md:hidden'}`}>A</h2>
         </div>

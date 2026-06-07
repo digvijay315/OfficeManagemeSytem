@@ -7,7 +7,8 @@ const taskSchema = new mongoose.Schema({
     date: String,
     status: { type: String, default: 'pending' },
     type: { type: String, default: 'regular' },
-    comment: String
+    comment: String,
+    images: [String]
 }, {
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
