@@ -7,6 +7,7 @@ const attendanceSchema = new mongoose.Schema({
     end_time: String,
     start_location: String,
     end_location: String,
+    start_image_url: String,
     image_url: String
 }, {
     toJSON: { virtuals: true },

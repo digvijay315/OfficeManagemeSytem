@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../api';
 import { showAlert, showLoader, closeLoader } from '../utils/swalUtils';
 import Swal from 'sweetalert2';
-import { UserPlus, Mail, Lock, DollarSign, MapPin, Building, CreditCard, FileText, CheckCircle, UploadCloud, Calendar, ChevronLeft, ChevronRight, Edit2, Trash2 } from 'lucide-react';
+import { UserPlus, Mail, Lock, DollarSign, MapPin, Building, CreditCard, FileText, CheckCircle, UploadCloud, Calendar, ChevronLeft, ChevronRight, Edit2, Trash2, Phone } from 'lucide-react';
 
 const InputField = ({ label, icon: Icon, ...props }) => (
   <div>
@@ -23,7 +23,7 @@ export default function StaffManagement() {
   const [loadingUpload, setLoadingUpload] = useState("");
   const [editId, setEditId] = useState(null);
   const [formData, setFormData] = useState({ 
-    name: '', email: '', password: '', salary: '', 
+    name: '', email: '', password: '', mobile: '', salary: '', 
     address: '',
     documentName: '', documentNo: '',
     bankName: '', accountNo: '', ifscCode: '', branchName: '',
@@ -65,6 +65,7 @@ export default function StaffManagement() {
             ${picHtml}
             <h2 class="text-xl font-bold mt-3">${staff.name}</h2>
             <p class="text-gray-500">${staff.email}</p>
+            <p class="text-sm font-medium mt-1"><span class="text-indigo-600">Mobile:</span> ${staff.mobile || 'N/A'}</p>
             <span class="inline-block mt-2 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">Joined: ${staff.joinedDate || 'N/A'}</span>
           </div>
           
@@ -139,7 +140,7 @@ export default function StaffManagement() {
       }
       
       setFormData({ 
-        name: '', email: '', password: '', salary: '', 
+        name: '', email: '', password: '', mobile: '', salary: '', 
         address: '',
         documentName: '', documentNo: '',
         bankName: '', accountNo: '', ifscCode: '', branchName: '',
@@ -162,6 +163,7 @@ export default function StaffManagement() {
     setFormData({
       name: staff.name || '',
       email: staff.email || '',
+      mobile: staff.mobile || '',
       password: '',
       salary: staff.salary || '',
       address: staff.address || '',
@@ -231,6 +233,7 @@ export default function StaffManagement() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <InputField label="Full Name" icon={UserPlus} type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
             <InputField label="Email Address" icon={Mail} type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} required />
+            <InputField label="Mobile Number" icon={Phone} type="text" value={formData.mobile} onChange={(e) => setFormData({...formData, mobile: e.target.value})} placeholder="e.g. 9876543210" />
             <InputField label="Password" icon={Lock} type="text" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} required={!editId} placeholder={editId ? "Leave blank to keep unchanged" : ""} />
             <InputField label="Monthly Salary (₹)" icon={DollarSign} type="number" value={formData.salary} onChange={(e) => setFormData({...formData, salary: e.target.value})} required />
             <InputField label="Joining Date" icon={Calendar} type="date" value={formData.joinedDate} onChange={(e) => setFormData({...formData, joinedDate: e.target.value})} required />
@@ -326,7 +329,7 @@ export default function StaffManagement() {
               onClick={() => {
                 setEditId(null);
                 setFormData({
-                  name: '', email: '', password: '', salary: '', 
+                  name: '', email: '', password: '', mobile: '', salary: '', 
                   address: '', documentName: '', documentNo: '',
                   bankName: '', accountNo: '', ifscCode: '', branchName: '',
                   joinedDate: new Date().toISOString().split('T')[0],
@@ -375,6 +378,7 @@ export default function StaffManagement() {
                   <td className="p-5">
                     <p className="font-bold text-gray-800">{staff.name}</p>
                     <p className="text-sm text-gray-500">{staff.email}</p>
+                    {staff.mobile && <p className="text-xs text-gray-400 mt-0.5">{staff.mobile}</p>}
                   </td>
                   <td className="p-5">
                     <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">

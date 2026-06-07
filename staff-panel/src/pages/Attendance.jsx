@@ -42,7 +42,8 @@ export default function Attendance() {
   const [locationStr, setLocationStr] = useState('Fetching location...');
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
   
-  const [showWebcam, setShowWebcam] = useState(false);
+  const [showWebcam, setShowWebcam] = useState(false); // for stop work
+  const [showStartWebcam, setShowStartWebcam] = useState(false);
   const webcamRef = useRef(null);
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -103,13 +104,21 @@ export default function Attendance() {
     }
   };
 
-  const handleStartWork = async () => {
+  const handleStartWork = () => {
     if (locationStr.includes('Denied') || locationStr.includes('Fetching')) {
       return alert('Please allow location access to mark attendance.');
     }
+    setShowStartWebcam(true);
+  };
+
+  const capturePhotoAndStart = async () => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    if (!imageSrc) return alert('Failed to capture photo');
+
     try {
       const start_time = new Date().toLocaleTimeString();
-      await api.post('/staff/attendance/start', { start_time, start_location: locationStr });
+      await api.post('/staff/attendance/start', { start_time, start_location: locationStr, start_image_url: imageSrc });
+      setShowStartWebcam(false);
       fetchTodayAttendance();
     } catch (err) {
       alert(err.response?.data?.error || 'Error starting work');
@@ -165,12 +174,38 @@ export default function Attendance() {
               <Clock size={40} className="text-emerald-500 mb-2" />
               <span className="text-lg font-bold text-emerald-800">Not Started</span>
             </div>
-            <button 
-              onClick={handleStartWork}
-              className="bg-emerald-600 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-emerald-700 transition-transform transform hover:scale-105 shadow-lg flex items-center gap-2 mx-auto"
-            >
-              <Clock size={24} /> Mark Attendance & Start Work
-            </button>
+            
+            {!showStartWebcam ? (
+              <button 
+                onClick={handleStartWork}
+                className="bg-emerald-600 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-emerald-700 transition-transform transform hover:scale-105 shadow-lg flex items-center gap-2 mx-auto"
+              >
+                <Camera size={24} /> Take Photo & Start Work
+              </button>
+            ) : (
+              <div className="bg-gray-900 p-4 rounded-xl max-w-sm mx-auto">
+                <Webcam
+                  audio={false}
+                  ref={webcamRef}
+                  screenshotFormat="image/jpeg"
+                  className="rounded-lg w-full mb-4"
+                />
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => setShowStartWebcam(false)}
+                    className="flex-1 bg-gray-700 text-white py-2 rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={capturePhotoAndStart}
+                    className="flex-1 bg-emerald-500 text-white py-2 rounded-lg font-bold"
+                  >
+                    Capture & Start
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : attendance.end_time ? (
           <div>

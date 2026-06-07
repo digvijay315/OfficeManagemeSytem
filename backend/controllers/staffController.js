@@ -2,6 +2,7 @@ const Task = require('../models/Task');
 const Fund = require('../models/Fund');
 const SalaryPayment = require('../models/SalaryPayment');
 const Attendance = require('../models/Attendance');
+const User = require('../models/User');
 
 const mongoose = require('mongoose');
 const { getPagination } = require('../utils/pagination');
@@ -117,13 +118,13 @@ const getTodayAttendance = async (req, res) => {
 
 const startAttendance = async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
-    const { start_time, start_location } = req.body;
+    const { start_time, start_location, start_image_url } = req.body;
     
     const existing = await Attendance.findOne({ staff_id: req.user._id, date: today });
     if (existing) return res.status(400).json({ error: 'Attendance already started today' });
 
     const attendance = await Attendance.create({
-        staff_id: req.user._id, date: today, start_time, start_location
+        staff_id: req.user._id, date: today, start_time, start_location, start_image_url
     });
     res.json(attendance);
 };
@@ -185,9 +186,54 @@ const getRewardsAndRevenue = async (req, res) => {
     }
 };
 
+const getProfile = async (req, res) => {
+    try {
+        const staff = await User.findById(req.user._id);
+        res.json(staff);
+    } catch (err) {
+        res.status(500).json({ error: 'Error fetching profile' });
+    }
+};
+
+const updateProfile = async (req, res) => {
+    try {
+        // Staff should only update certain fields, prevent changing salary, role, etc.
+        const { name, email, mobile, Upload, documentName, documentNo, address, bankName, accountNo, ifscCode, branchName } = req.body;
+        const staff = await User.findByIdAndUpdate(
+            req.user._id,
+            { name, email, mobile, Upload, documentName, documentNo, address, bankName, accountNo, ifscCode, branchName },
+            { new: true }
+        );
+        res.json({ success: true, user: { id: staff.id, name: staff.name, email: staff.email, mobile: staff.mobile, Upload: staff.Upload } });
+    } catch (err) {
+        res.status(500).json({ error: 'Error updating profile' });
+    }
+};
+
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const staff = await User.findById(req.user._id);
+        
+        if (!staff) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        if (staff.password !== currentPassword) {
+            return res.status(400).json({ error: 'Incorrect current password' });
+        }
+        
+        staff.password = newPassword;
+        await staff.save();
+        
+        res.json({ success: true, message: 'Password changed successfully' });
+    } catch (err) {
+        res.status(500).json({ error: 'Error changing password' });
+    }
+};
+
 module.exports = {
     getTasks, getGroupedTasks, updateTask, createAdditionalTask,
     getFunds, requestAdvance,
     getTodayAttendance, startAttendance, stopAttendance,
-    getRewardsAndRevenue
+    getRewardsAndRevenue, getProfile, updateProfile, changePassword
 };

@@ -53,13 +53,13 @@ export default function Login() {
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email ID / Username</label>
+            <label className="block text-sm font-medium text-gray-700">Email ID / Mobile Number</label>
             <input 
               type="text" 
               className="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
+              placeholder="Enter email or mobile number"
               required 
             />
           </div>

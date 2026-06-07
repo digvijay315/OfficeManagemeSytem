@@ -204,15 +204,32 @@ export default function AttendanceViewer() {
                     </div>
                   </td>
                   <td className="p-5">
-                    {log.image_url ? (
-                      <a href={log.image_url} target="_blank" rel="noreferrer">
-                        <img src={log.image_url} alt="Proof" className="w-14 h-14 rounded-lg object-cover border-2 border-gray-200 hover:border-indigo-400 transition-colors cursor-pointer shadow-sm" />
-                      </a>
-                    ) : (
-                      <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200">
-                        <span className="text-xs font-medium">No Pic</span>
+                    <div className="flex gap-3">
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-[10px] font-bold uppercase text-gray-500">In</span>
+                        {log.start_image_url ? (
+                          <a href={log.start_image_url} target="_blank" rel="noreferrer">
+                            <img src={log.start_image_url} alt="In Proof" className="w-12 h-12 rounded-lg object-cover border-2 border-emerald-200 hover:border-emerald-400 transition-colors cursor-pointer shadow-sm" />
+                          </a>
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200">
+                            <span className="text-[10px] font-medium">No Pic</span>
+                          </div>
+                        )}
                       </div>
-                    )}
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-[10px] font-bold uppercase text-gray-500">Out</span>
+                        {log.image_url ? (
+                          <a href={log.image_url} target="_blank" rel="noreferrer">
+                            <img src={log.image_url} alt="Out Proof" className="w-12 h-12 rounded-lg object-cover border-2 border-rose-200 hover:border-rose-400 transition-colors cursor-pointer shadow-sm" />
+                          </a>
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200">
+                            <span className="text-[10px] font-medium">No Pic</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </td>
                   <td className="p-5 text-center">
                     {log.end_time ? (

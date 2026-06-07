@@ -85,10 +85,10 @@ const createStaff = async (req, res) => {
     const { error } = staffSchema.validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
-    const { name, email, password, salary, Upload, documentName, documentNo, address, bankName, accountNo, ifscCode, branchName, joinedDate } = req.body;
+    const { name, email, password, mobile, salary, Upload, documentName, documentNo, address, bankName, accountNo, ifscCode, branchName, joinedDate } = req.body;
     try {
         const dateToSave = joinedDate || new Date().toISOString().split('T')[0];
-        const staff = await User.create({ name, email, password, role: 'staff', salary: salary || 0, Upload, documentName, documentNo, address, bankName, accountNo, ifscCode, branchName, joinedDate: dateToSave });
+        const staff = await User.create({ name, email, password, role: 'staff', mobile, salary: salary || 0, Upload, documentName, documentNo, address, bankName, accountNo, ifscCode, branchName, joinedDate: dateToSave });
         res.json(staff);
     } catch (err) {
         res.status(400).json({ error: 'Error creating staff (Email might be duplicate)' });
@@ -210,6 +210,7 @@ const getAttendance = async (req, res) => {
         end_time: a.end_time,
         start_location: a.start_location,
         end_location: a.end_location,
+        start_image_url: a.start_image_url,
         image_url: a.image_url
     }));
     res.json({ data: transformed, total, page, pages: Math.ceil(total / limit) });

@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     role: { type: String, default: 'staff' },
     salary: { type: Number, default: 0 },
+    mobile: { type: String },
     Upload: {
         pic: [String],
         document: [String]

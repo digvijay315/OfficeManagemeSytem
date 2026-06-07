@@ -1,10 +1,15 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Clock, CheckSquare, IndianRupee, LogOut, Menu, LayoutDashboard, X, Gift } from 'lucide-react';
+import { Clock, CheckSquare, IndianRupee, LogOut, Menu, LayoutDashboard, X, Gift, ChevronDown, User as UserIcon, Key } from 'lucide-react';
 import { useState } from 'react';
+import ProfileModal from '../components/ProfileModal';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 
 export default function Dashboard() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -96,14 +101,39 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 pr-4">
-            <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 font-bold border border-emerald-200">
-              {user.name ? user.name.charAt(0).toUpperCase() : 'S'}
-            </div>
-            <div className="block">
-              <p className="text-sm font-bold text-gray-800 leading-tight">{user.name}</p>
-              <p className="text-xs text-gray-500">{user.email}</p>
-            </div>
+          <div className="flex items-center gap-3 pr-4 relative z-50">
+            <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-3 hover:bg-gray-100 p-2 rounded-lg transition-colors cursor-pointer">
+              {user.Upload?.pic?.length > 0 ? (
+                <img src={user.Upload.pic[0]} alt="Profile" className="w-9 h-9 rounded-full object-cover border border-emerald-200" />
+              ) : (
+                <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 font-bold border border-emerald-200">
+                  {user.name ? user.name.charAt(0).toUpperCase() : 'S'}
+                </div>
+              )}
+              <div className="hidden sm:block text-left">
+                <p className="text-sm font-bold text-gray-800 leading-tight">{user.name}</p>
+                <p className="text-xs text-gray-500">{user.email}</p>
+              </div>
+              <ChevronDown size={16} className="text-gray-500" />
+            </button>
+
+            {dropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)}></div>
+                <div className="absolute top-full right-4 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+                  <button onClick={() => { setProfileModalOpen(true); setDropdownOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-emerald-600 flex items-center gap-2 cursor-pointer">
+                    <UserIcon size={16} /> Profile
+                  </button>
+                  <button onClick={() => { setPasswordModalOpen(true); setDropdownOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-emerald-600 flex items-center gap-2 cursor-pointer">
+                    <Key size={16} /> Change Password
+                  </button>
+                  <div className="border-t border-gray-100 my-1"></div>
+                  <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer">
+                    <LogOut size={16} /> Logout
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </header>
 
@@ -112,6 +142,9 @@ export default function Dashboard() {
           <Outlet />
         </main>
       </div>
+
+      <ProfileModal isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
+      <ChangePasswordModal isOpen={passwordModalOpen} onClose={() => setPasswordModalOpen(false)} />
     </div>
   );
 }

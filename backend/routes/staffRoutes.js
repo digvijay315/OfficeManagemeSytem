@@ -3,10 +3,14 @@ const {
     getTasks, getGroupedTasks, updateTask, createAdditionalTask,
     getFunds, requestAdvance,
     getTodayAttendance, startAttendance, stopAttendance,
-    getRewardsAndRevenue
+    getRewardsAndRevenue, getProfile, updateProfile, changePassword
 } = require('../controllers/staffController');
 
 const router = express.Router();
+
+router.get('/profile', getProfile);
+router.put('/profile', updateProfile);
+router.put('/password', changePassword);
 
 router.get('/tasks', getTasks);
 router.get('/tasks/grouped', getGroupedTasks);
