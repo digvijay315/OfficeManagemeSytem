@@ -99,7 +99,7 @@ export default function Dashboard() {
             <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 font-bold border border-emerald-200">
               {user.name ? user.name.charAt(0).toUpperCase() : 'S'}
             </div>
-            <div className="hidden md:block">
+            <div className="block">
               <p className="text-sm font-bold text-gray-800 leading-tight">{user.name}</p>
               <p className="text-xs text-gray-500">{user.email}</p>
             </div>
