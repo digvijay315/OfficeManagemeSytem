@@ -5,6 +5,7 @@ import Attendance from './pages/Attendance';
 import TaskList from './pages/TaskList';
 import FundsViewer from './pages/FundsViewer';
 import Overview from './pages/Overview';
+import RewardsRevenue from './pages/RewardsRevenue';
 
 function App() {
   const isAuthenticated = !!localStorage.getItem('token');
@@ -19,6 +20,7 @@ function App() {
             <Route path="attendance" element={<Attendance />} />
             <Route path="tasks" element={<TaskList />} />
             <Route path="funds" element={<FundsViewer />} />
+            <Route path="rewards-revenue" element={<RewardsRevenue />} />
           </Route>
         ) : (
           <Route path="*" element={<Navigate to="/login" />} />

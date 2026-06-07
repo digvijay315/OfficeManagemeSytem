@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import { AlertCircle, CheckCircle, Clock, PlusCircle, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, PlusCircle, ChevronDown, ChevronUp, AlertTriangle, Plus, X } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 const TaskCard = ({ task, onComplete }) => {
   const [comment, setComment] = useState('');
   const [files, setFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMode, setPaymentMode] = useState('none');
+  const [paymentSlips, setPaymentSlips] = useState([]);
 
   return (
     <div className={`p-4 rounded-xl border ${task.type === 'emergency' ? 'border-red-200 bg-red-50' : 'border-white bg-white'} shadow-sm`}>
@@ -40,10 +45,13 @@ const TaskCard = ({ task, onComplete }) => {
           />
           <button 
             disabled={isUploading}
-            onClick={async () => {
-              setIsUploading(true);
-              await onComplete(task._id, comment, files);
-              setIsUploading(false);
+            onClick={() => {
+              if (task.type === 'additional') {
+                setIsUploading(true);
+                onComplete(task._id, { comment, files }).finally(() => setIsUploading(false));
+              } else {
+                setShowCompleteModal(true);
+              }
             }}
             className={`w-full py-2 rounded-lg text-white text-sm font-bold transition-colors flex justify-center items-center gap-2 disabled:opacity-70 ${task.type === 'emergency' ? 'bg-red-600 hover:bg-red-700 shadow-sm shadow-red-200' : 'bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200'}`}
           >
@@ -54,6 +62,11 @@ const TaskCard = ({ task, onComplete }) => {
       ) : (
         <div className="mt-4 pt-3 border-t border-gray-100">
           <p className="text-sm text-emerald-600 flex items-center gap-1 font-semibold"><CheckCircle size={14}/> Completed</p>
+          {task.paymentAmount > 0 && (
+            <p className="text-xs text-gray-700 mt-1 font-medium bg-gray-50 px-2 py-1 rounded">
+              Payment Collected: ₹{task.paymentAmount} ({task.paymentMode})
+            </p>
+          )}
           {task.comment && <p className="text-xs text-gray-500 mt-1 bg-gray-50 p-2 rounded border border-gray-100">"{task.comment}"</p>}
           {task.images && task.images.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
@@ -64,6 +77,89 @@ const TaskCard = ({ task, onComplete }) => {
               ))}
             </div>
           )}
+          {task.paymentSlipUrls && task.paymentSlipUrls.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              <span className="text-xs text-blue-600 font-semibold w-full block">Payment Slips:</span>
+              {task.paymentSlipUrls.map((img, i) => (
+                <a key={i} href={img} target="_blank" rel="noreferrer" className="block relative w-12 h-12 rounded-md overflow-hidden border border-gray-200 hover:border-blue-400 transition-colors">
+                  <img src={img} alt="Payment slip" className="w-full h-full object-cover" />
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {showCompleteModal && (
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Complete Task</h3>
+            <p className="text-sm text-gray-500 mb-4">Did you collect any payment from the customer?</p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Payment Collected (₹)</label>
+                <input 
+                  type="number" 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={paymentAmount}
+                  onChange={e => setPaymentAmount(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+              
+              {Number(paymentAmount) > 0 && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Payment Mode</label>
+                  <select 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                    value={paymentMode}
+                    onChange={e => setPaymentMode(e.target.value)}
+                  >
+                    <option value="none">Select Mode</option>
+                    <option value="cash">Cash</option>
+                    <option value="online">Online</option>
+                  </select>
+                </div>
+              )}
+
+              {paymentMode === 'online' && Number(paymentAmount) > 0 && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Upload Payment Slips</label>
+                  <input 
+                    type="file" 
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => setPaymentSlips(Array.from(e.target.files))}
+                    className="w-full text-sm text-gray-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 outline-none border border-gray-200 rounded-lg cursor-pointer"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-6">
+              <button 
+                type="button" 
+                disabled={isUploading}
+                onClick={() => setShowCompleteModal(false)}
+                className="flex-1 py-2 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={async () => {
+                  setIsUploading(true);
+                  await onComplete(task._id, { comment, files, paymentAmount, paymentMode, paymentSlips });
+                  setIsUploading(false);
+                  setShowCompleteModal(false);
+                }}
+                disabled={isUploading}
+                className="flex-1 py-2 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors flex justify-center items-center"
+              >
+                {isUploading ? <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div> : 'Confirm & Complete'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -103,21 +199,46 @@ export default function TaskList() {
     fetchGroupedTasks(page);
   }, [page]);
 
-  const handleComplete = async (taskId, submittedComment, selectedFiles) => {
+  const handleComplete = async (taskId, data) => {
     try {
+      const { comment, files, paymentAmount, paymentMode, paymentSlips } = data;
       let imageUrls = [];
-      if (selectedFiles && selectedFiles.length > 0) {
+      let paymentSlipUrls = [];
+
+      if (files && files.length > 0) {
         const formData = new FormData();
-        selectedFiles.forEach(file => formData.append('files', file));
-        const uploadRes = await api.post('/upload/upload-files', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        files.forEach(file => formData.append('files', file));
+        const uploadRes = await api.post('/upload/upload-files', formData);
         if (uploadRes.data.success) {
           imageUrls = uploadRes.data.urls;
         }
       }
 
-      await api.put(`/staff/tasks/${taskId}`, { status: 'completed', comment: submittedComment || '', images: imageUrls });
+      if (paymentSlips && paymentSlips.length > 0) {
+        const slipData = new FormData();
+        paymentSlips.forEach(file => slipData.append('files', file));
+        const slipRes = await api.post('/upload/upload-files', slipData);
+        if (slipRes.data.success) {
+          paymentSlipUrls = slipRes.data.urls;
+        }
+      }
+
+      await api.put(`/staff/tasks/${taskId}`, { 
+          status: 'completed', 
+          comment: comment || '', 
+          images: imageUrls,
+          paymentAmount: Number(paymentAmount) || 0,
+          paymentMode: paymentMode || 'none',
+          paymentSlipUrls
+      });
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Task Completed!',
+        text: 'Your task has been successfully marked as completed.',
+        confirmButtonColor: '#4f46e5'
+      });
+
       // Refresh the current page
       fetchGroupedTasks(page);
     } catch (err) {
@@ -133,15 +254,21 @@ export default function TaskList() {
       if (newFiles && newFiles.length > 0) {
         const formData = new FormData();
         newFiles.forEach(file => formData.append('files', file));
-        const uploadRes = await api.post('/upload/upload-files', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        const uploadRes = await api.post('/upload/upload-files', formData);
         if (uploadRes.data.success) {
           imageUrls = uploadRes.data.urls;
         }
       }
 
       await api.post('/staff/tasks', { ...newTask, date: new Date().toISOString().split('T')[0], type: 'additional', images: imageUrls });
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Task Logged!',
+        text: 'Your additional task has been successfully logged.',
+        confirmButtonColor: '#4f46e5'
+      });
+
       setShowAddModal(false);
       setNewTask({ title: '', description: '' });
       setNewFiles([]);

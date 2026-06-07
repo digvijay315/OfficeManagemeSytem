@@ -4,7 +4,7 @@ import { IndianRupee, History, Wallet, PlusCircle, CheckCircle, Clock, XCircle, 
 import Swal from 'sweetalert2';
 
 export default function FundsViewer() {
-  const [data, setData] = useState({ salary: 0, totalTaken: 0, remaining: 0, funds: [] });
+  const [data, setData] = useState({ salary: 0, baseSalary: 0, totalRewards: 0, totalTaken: 0, remaining: 0, funds: [] });
   const [showModal, setShowModal] = useState(false);
   const [requestData, setRequestData] = useState({ amount: '', description: '' });
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -78,14 +78,24 @@ export default function FundsViewer() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
           <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
             <Wallet size={24} />
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-500">Monthly Salary</p>
-            <p className="text-2xl font-bold text-gray-800">₹{data.salary}</p>
+            <p className="text-sm font-medium text-gray-500">Base Salary</p>
+            <p className="text-2xl font-bold text-gray-800">₹{data.baseSalary}</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+            <CheckCircle size={24} />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-500">Total Rewards</p>
+            <p className="text-2xl font-bold text-emerald-600">+ ₹{data.totalRewards}</p>
           </div>
         </div>
 
@@ -157,6 +167,11 @@ export default function FundsViewer() {
                         Salary
                       </span>
                     )}
+                    {fund.type === 'reward' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 uppercase tracking-wider mr-2 border border-emerald-200">
+                        Reward
+                      </span>
+                    )}
                     {fund.description || '-'}
                   </td>
                   <td className="p-4">{getStatusBadge(fund.status)}</td>
@@ -169,8 +184,11 @@ export default function FundsViewer() {
                       <span className="text-gray-400">-</span>
                     )}
                   </td>
-                  <td className={`p-4 font-bold text-right ${fund.status === 'approved' ? 'text-red-600' : 'text-gray-500'}`}>
-                    {fund.status === 'approved' ? '- ' : ''}₹{fund.amount}
+                  <td className={`p-4 font-bold text-right ${
+                    fund.type === 'reward' ? 'text-emerald-600' :
+                    fund.status === 'approved' ? 'text-red-600' : 'text-gray-500'
+                  }`}>
+                    {fund.type === 'reward' ? '+ ' : fund.status === 'approved' ? '- ' : ''}₹{fund.amount}
                   </td>
                 </tr>
               ))}

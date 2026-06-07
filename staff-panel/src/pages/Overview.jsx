@@ -143,8 +143,14 @@ export default function Overview() {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-500">Base Salary</span>
-              <span className="font-semibold text-gray-800 flex items-center"><IndianRupee size={14}/> {funds.salary}</span>
+              <span className="font-semibold text-gray-800 flex items-center"><IndianRupee size={14}/> {funds.baseSalary || 0}</span>
             </div>
+            {funds.totalRewards > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">Rewards</span>
+                <span className="font-semibold text-emerald-600 flex items-center">+ <IndianRupee size={14}/> {funds.totalRewards}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-500">Advanced Taken</span>
               <span className="font-semibold text-red-500 flex items-center">- <IndianRupee size={14}/> {funds.totalTaken}</span>

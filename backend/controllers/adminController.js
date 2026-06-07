@@ -57,6 +57,23 @@ const getGroupedTasks = async (req, res) => {
     res.json({ data: groupedTasks, total, page, pages: Math.ceil(total / limit) });
 };
 
+const getPendingVerificationTasks = async (req, res) => {
+    try {
+        const tasks = await Task.find({ type: 'additional', verificationStatus: 'pending' })
+            .populate('staff_id', 'name email Upload')
+            .sort({ date: -1, _id: -1 });
+        
+        // Transform to add 'staff' property for the frontend
+        const transformed = tasks.map(t => ({
+            ...t.toObject(),
+            staff: t.staff_id
+        }));
+        res.json({ data: transformed });
+    } catch (err) {
+        res.status(500).json({ error: 'Error fetching pending tasks' });
+    }
+};
+
 const getStaff = async (req, res) => {
     const { page, limit, skip } = getPagination(req);
     const total = await User.countDocuments({ role: 'staff' });
@@ -130,12 +147,22 @@ const getFundsSummary = async (req, res) => {
 
         const allFunds = await Fund.find({ date: { $regex: `^${month}` }, status: 'approved' });
         const allPayments = await SalaryPayment.find({ month });
+        const allRewardTasks = await Task.find({ 
+            date: { $regex: `^${month}` }, 
+            verificationStatus: 'verified', 
+            rewardAmount: { $gt: 0 } 
+        });
 
         const summary = staffMembers.map(staff => {
             const staffFunds = allFunds.filter(f => f.staff_id.toString() === staff.id);
             const totalAdvance = staffFunds.reduce((sum, f) => sum + f.amount, 0);
+            
+            const staffRewards = allRewardTasks.filter(t => t.staff_id.toString() === staff.id);
+            const totalReward = staffRewards.reduce((sum, t) => sum + (t.rewardAmount || 0), 0);
+
             const payment = allPayments.find(p => p.staff_id.toString() === staff.id);
             const baseSalary = staff.salary || 0;
+            const effectiveSalary = baseSalary + totalReward;
             
             return {
                 staff_id: staff.id,
@@ -143,8 +170,9 @@ const getFundsSummary = async (req, res) => {
                 email: staff.email,
                 pic: staff.Upload?.pic?.[0] || null,
                 baseSalary,
+                totalReward,
                 totalAdvance,
-                remainingSalary: baseSalary - totalAdvance,
+                remainingSalary: effectiveSalary - totalAdvance,
                 isPaid: !!payment,
                 paymentDetails: payment || null
             };
@@ -359,9 +387,72 @@ const updateAdvanceRequest = async (req, res) => {
     }
 };
 
+const verifyTask = async (req, res) => {
+    const { id } = req.params;
+    const { verificationStatus, rewardAmount, rewardSlipUrls } = req.body;
+    try {
+        const task = await Task.findByIdAndUpdate(id, { 
+            verificationStatus, 
+            rewardAmount: rewardAmount || 0,
+            rewardSlipUrls
+        }, { new: true });
+        res.json(task);
+    } catch (err) {
+        res.status(500).json({ error: 'Error verifying task' });
+    }
+};
+
+const getRevenueReports = async (req, res) => {
+    const { month } = req.query; // format: 'YYYY-MM', or empty for all
+    
+    try {
+        let taskQuery = {};
+        if (month) {
+            taskQuery.date = { $regex: `^${month}` };
+        }
+
+        const tasks = await Task.find(taskQuery).populate('staff_id', 'name email Upload');
+        
+        const totalRevenueThisMonth = tasks.reduce((sum, t) => sum + (t.paymentAmount || 0), 0);
+        
+        const totalRewardsThisMonth = tasks.filter(t => t.verificationStatus === 'verified')
+                                           .reduce((sum, t) => sum + (t.rewardAmount || 0), 0);
+
+        // Group by staff
+        const staffMap = {};
+        tasks.forEach(t => {
+            if (!t.staff_id) return;
+            const sId = t.staff_id._id.toString();
+            if (!staffMap[sId]) {
+                staffMap[sId] = {
+                    staff_id: t.staff_id._id,
+                    name: t.staff_id.name,
+                    email: t.staff_id.email,
+                    pic: t.staff_id.Upload?.pic?.[0] || null,
+                    revenue: 0,
+                    rewards: 0
+                };
+            }
+            staffMap[sId].revenue += (t.paymentAmount || 0);
+            if (t.verificationStatus === 'verified') {
+                staffMap[sId].rewards += (t.rewardAmount || 0);
+            }
+        });
+
+        res.json({
+            totalRevenueThisMonth,
+            totalRewardsThisMonth,
+            staffData: Object.values(staffMap).sort((a, b) => b.revenue - a.revenue)
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Error fetching revenue reports' });
+    }
+};
+
 module.exports = {
     getStaff, createStaff, updateStaff, deleteStaff,
     assignTask, getGroupedTasks, recordFund, getFundsSummary, paySalary,
     getAttendance, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
-    getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest
+    getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest,
+    verifyTask, getRevenueReports, getPendingVerificationTasks
 };

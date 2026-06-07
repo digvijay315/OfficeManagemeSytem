@@ -244,13 +244,49 @@ export default function TaskViewer() {
                                                     <div className="mt-4 pt-3 border-t border-gray-100">
                                                       <p className="text-sm text-emerald-600 flex items-center gap-1 font-semibold"><CheckCircle size={14}/> Completed</p>
                                                       {task.comment && <p className="text-xs text-gray-500 mt-1 bg-gray-50 p-2 rounded border border-gray-100">"{task.comment}"</p>}
+                                                      
+                                                      {task.paymentAmount > 0 && (
+                                                        <p className="text-xs text-gray-700 mt-2 font-medium bg-gray-50 px-2 py-1 rounded inline-block">
+                                                          Payment Collected: ₹{task.paymentAmount} ({task.paymentMode})
+                                                        </p>
+                                                      )}
+
                                                       {task.images && task.images.length > 0 && (
-                                                        <div className="mt-2 flex flex-wrap gap-2">
-                                                          {task.images.map((img, i) => (
-                                                            <a key={i} href={img} target="_blank" rel="noreferrer" className="block relative w-12 h-12 rounded-md overflow-hidden border border-gray-200 hover:border-indigo-400 transition-colors">
-                                                              <img src={img} alt="Task proof" className="w-full h-full object-cover" />
-                                                            </a>
-                                                          ))}
+                                                        <div className="mt-3">
+                                                          <span className="text-xs text-gray-500 font-semibold block mb-1">Work Proof:</span>
+                                                          <div className="flex flex-wrap gap-2">
+                                                            {task.images.map((img, i) => (
+                                                              <a key={i} href={img} target="_blank" rel="noreferrer" className="block relative w-12 h-12 rounded-md overflow-hidden border border-gray-200 hover:border-indigo-400 transition-colors">
+                                                                <img src={img} alt="Task proof" className="w-full h-full object-cover" />
+                                                              </a>
+                                                            ))}
+                                                          </div>
+                                                        </div>
+                                                      )}
+
+                                                      {task.paymentSlipUrls && task.paymentSlipUrls.length > 0 && (
+                                                        <div className="mt-3">
+                                                          <span className="text-xs text-gray-500 font-semibold block mb-1">Payment Proof:</span>
+                                                          <div className="flex flex-wrap gap-2">
+                                                            {task.paymentSlipUrls.map((img, i) => (
+                                                              <a key={i} href={img} target="_blank" rel="noreferrer" className="block relative w-12 h-12 rounded-md overflow-hidden border border-gray-200 hover:border-indigo-400 transition-colors">
+                                                                <img src={img} alt="Payment slip" className="w-full h-full object-cover" />
+                                                              </a>
+                                                            ))}
+                                                          </div>
+                                                        </div>
+                                                      )}
+                                                      
+                                                      {task.rewardSlipUrls && task.rewardSlipUrls.length > 0 && (
+                                                        <div className="mt-3">
+                                                          <span className="text-xs text-emerald-600 font-semibold block mb-1">Reward Payment Proof:</span>
+                                                          <div className="flex flex-wrap gap-2">
+                                                            {task.rewardSlipUrls.map((img, i) => (
+                                                              <a key={i} href={img} target="_blank" rel="noreferrer" className="block relative w-12 h-12 rounded-md overflow-hidden border border-emerald-200 hover:border-emerald-400 transition-colors">
+                                                                <img src={img} alt="Reward Payment slip" className="w-full h-full object-cover" />
+                                                              </a>
+                                                            ))}
+                                                          </div>
                                                         </div>
                                                       )}
                                                     </div>

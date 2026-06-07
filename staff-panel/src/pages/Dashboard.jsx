@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Clock, CheckSquare, IndianRupee, LogOut, Menu, LayoutDashboard, X } from 'lucide-react';
+import { Clock, CheckSquare, IndianRupee, LogOut, Menu, LayoutDashboard, X, Gift } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Dashboard() {
@@ -18,6 +18,7 @@ export default function Dashboard() {
     { path: '/', name: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { path: '/attendance', name: 'Attendance & Timer', icon: <Clock size={20} /> },
     { path: '/tasks', name: 'My Tasks', icon: <CheckSquare size={20} /> },
+    { path: '/rewards-revenue', name: 'My Rewards', icon: <Gift size={20} /> },
     { path: '/funds', name: 'My Salary & Funds', icon: <IndianRupee size={20} /> },
   ];
 

@@ -1,11 +1,26 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Users, ClipboardList, Wallet, Calendar, LogOut, Menu, X, LayoutDashboard, ListPlus, CheckSquare } from 'lucide-react';
-import { useState } from 'react';
+import { Users, ClipboardList, Wallet, Calendar, LogOut, Menu, X, LayoutDashboard, ListPlus, CheckSquare, ChevronDown } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import { showConfirm } from '../utils/swalUtils';
 
 export default function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true); // Default true
+  const navRef = useRef(null);
+  const [canScroll, setCanScroll] = useState(false);
+
+  const checkScroll = () => {
+    if (navRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = navRef.current;
+      setCanScroll(scrollHeight > clientHeight && scrollTop + clientHeight < scrollHeight - 5);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, []);
 
   const handleLogout = async () => {
     const confirmed = await showConfirm('Logout', 'Are you sure you want to logout?');
@@ -22,6 +37,8 @@ export default function Layout() {
     { path: '/custom-tasks', name: 'Task Library', icon: <ListPlus size={20} /> },
     { path: '/tasks', name: 'Assign Tasks', icon: <ClipboardList size={20} /> },
     { path: '/tasks-view', name: 'View Tasks', icon: <CheckSquare size={20} /> },
+    { path: '/task-verification', name: 'Task Verification', icon: <CheckSquare size={20} /> },
+    { path: '/revenue-reports', name: 'Revenue & Rewards', icon: <Wallet size={20} /> },
     { path: '/funds', name: 'Fund Management', icon: <Wallet size={20} /> },
     { path: '/attendance', name: 'Attendance', icon: <Calendar size={20} /> },
   ];
@@ -50,23 +67,35 @@ export default function Layout() {
           <h2 className={`text-xl font-bold hidden md:block ${sidebarOpen && 'md:hidden'}`}>A</h2>
         </div>
         
-        <nav className="flex-1 px-4 space-y-2 mt-6 overflow-y-auto overflow-x-hidden">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              title={!sidebarOpen ? item.name : ''}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap ${
-                location.pathname === item.path
-                  ? 'bg-indigo-800 text-white' 
-                  : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'
-              }`}
-            >
-              <div className="min-w-[20px]">{item.icon}</div>
-              <span className={`font-medium ${!sidebarOpen && 'md:hidden'}`}>{item.name}</span>
-            </Link>
-          ))}
-        </nav>
+        <div className="relative flex-1 flex flex-col min-h-0 mt-6">
+          <nav 
+            ref={navRef}
+            onScroll={checkScroll}
+            className="flex-1 px-4 space-y-2 overflow-y-auto overflow-x-hidden scrollbar-hide"
+          >
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                title={!sidebarOpen ? item.name : ''}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap ${
+                  location.pathname === item.path
+                    ? 'bg-indigo-800 text-white' 
+                    : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'
+                }`}
+              >
+                <div className="min-w-[20px]">{item.icon}</div>
+                <span className={`font-medium ${!sidebarOpen && 'md:hidden'}`}>{item.name}</span>
+              </Link>
+            ))}
+          </nav>
+          
+          {canScroll && sidebarOpen && (
+            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-indigo-900 to-transparent pointer-events-none flex items-end justify-center pb-2">
+              <ChevronDown size={20} className="text-indigo-300 animate-bounce" />
+            </div>
+          )}
+        </div>
 
         <div className="p-4 border-t border-indigo-800">
           <button 

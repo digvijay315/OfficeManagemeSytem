@@ -8,7 +8,13 @@ const taskSchema = new mongoose.Schema({
     status: { type: String, default: 'pending' },
     type: { type: String, default: 'regular' },
     comment: String,
-    images: [String]
+    images: [String],
+    paymentAmount: { type: Number, default: 0 },
+    paymentMode: { type: String, enum: ['cash', 'online', 'none'], default: 'none' },
+    paymentSlipUrls: [String],
+    rewardAmount: { type: Number, default: 0 },
+    rewardSlipUrls: [String],
+    verificationStatus: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' }
 }, {
     toJSON: { virtuals: true },
     toObject: { virtuals: true }

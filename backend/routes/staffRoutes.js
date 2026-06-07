@@ -2,7 +2,8 @@ const express = require('express');
 const {
     getTasks, getGroupedTasks, updateTask, createAdditionalTask,
     getFunds, requestAdvance,
-    getTodayAttendance, startAttendance, stopAttendance
+    getTodayAttendance, startAttendance, stopAttendance,
+    getRewardsAndRevenue
 } = require('../controllers/staffController');
 
 const router = express.Router();
@@ -14,6 +15,8 @@ router.post('/tasks', createAdditionalTask);
 
 router.get('/funds', getFunds);
 router.post('/funds/request', requestAdvance);
+
+router.get('/rewards-revenue', getRewardsAndRevenue);
 
 router.get('/attendance/today', getTodayAttendance);
 router.post('/attendance/start', startAttendance);

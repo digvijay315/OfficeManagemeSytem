@@ -29,8 +29,15 @@ const getGroupedTasks = async (req, res) => {
 };
 
 const updateTask = async (req, res) => {
-    const { status, comment, images } = req.body;
-    await Task.findOneAndUpdate({ _id: req.params.id, staff_id: req.user._id }, { status, comment, images });
+    const { status, comment, images, paymentAmount, paymentMode, paymentSlipUrls } = req.body;
+    await Task.findOneAndUpdate({ _id: req.params.id, staff_id: req.user._id }, { 
+        status, 
+        comment, 
+        images,
+        paymentAmount: paymentAmount || 0,
+        paymentMode: paymentMode || 'none',
+        paymentSlipUrls
+    });
     res.json({ success: true });
 };
 
@@ -43,7 +50,8 @@ const createAdditionalTask = async (req, res) => {
         date, 
         type: type || 'additional', 
         status: 'completed',
-        images: images || []
+        images: images || [],
+        verificationStatus: 'pending'
     });
     res.json(task);
 };
@@ -64,19 +72,41 @@ const getFunds = async (req, res) => {
     }
     const salaryPayments = await SalaryPayment.find(salaryQuery).sort({ date: -1 });
 
+    const rewardsQuery = { 
+        staff_id: req.user._id, 
+        verificationStatus: 'verified', 
+        rewardAmount: { $gt: 0 } 
+    };
+    if (month) {
+        rewardsQuery.date = { $regex: `^${month}` };
+    }
+
+    const rewardTasks = await Task.find(rewardsQuery);
+    const totalRewards = rewardTasks.reduce((sum, t) => sum + (t.rewardAmount || 0), 0);
+
     const combined = [
         ...funds.map(f => ({ ...f.toObject(), type: 'advance' })),
-        ...salaryPayments.map(s => ({ ...s.toObject(), type: 'salary', description: `Final Salary for ${s.month}`, status: 'approved' }))
+        ...salaryPayments.map(s => ({ ...s.toObject(), type: 'salary', description: `Final Salary for ${s.month}`, status: 'approved' })),
+        ...rewardTasks.map(t => ({
+            id: t._id,
+            date: t.date,
+            type: 'reward',
+            description: `Reward for: ${t.title}`,
+            status: 'approved',
+            amount: t.rewardAmount
+        }))
     ];
     
     combined.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     const approvedFunds = combined.filter(f => f.type === 'advance' && f.status === 'approved');
     const totalTaken = approvedFunds.reduce((sum, f) => sum + f.amount, 0);
-    const salary = req.user.salary;
+
+    const baseSalary = req.user.salary || 0;
+    const salary = baseSalary + totalRewards;
     const remaining = salary - totalTaken;
 
-    res.json({ salary, totalTaken, remaining, funds: combined });
+    res.json({ salary, baseSalary, totalRewards, totalTaken, remaining, funds: combined });
 };
 
 const getTodayAttendance = async (req, res) => {
@@ -125,8 +155,39 @@ const requestAdvance = async (req, res) => {
     }
 };
 
+const getRewardsAndRevenue = async (req, res) => {
+    const { month } = req.query; // format: 'YYYY-MM'
+    
+    let query = { staff_id: req.user._id };
+    if (month) {
+        query.date = { $regex: `^${month}` };
+    }
+
+    try {
+        const tasks = await Task.find(query).sort({ date: -1 });
+        
+        // Filter tasks that generated revenue
+        const revenueTasks = tasks.filter(t => t.paymentAmount > 0);
+        const totalRevenue = revenueTasks.reduce((sum, t) => sum + t.paymentAmount, 0);
+        
+        // Filter verified additional tasks that might have rewards
+        const rewardTasks = tasks.filter(t => t.type === 'additional' && t.verificationStatus === 'verified');
+        const totalRewards = rewardTasks.reduce((sum, t) => sum + (t.rewardAmount || 0), 0);
+
+        res.json({
+            totalRevenue,
+            totalRewards,
+            revenueTasks,
+            rewardTasks
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Error fetching rewards and revenue' });
+    }
+};
+
 module.exports = {
     getTasks, getGroupedTasks, updateTask, createAdditionalTask,
     getFunds, requestAdvance,
-    getTodayAttendance, startAttendance, stopAttendance
+    getTodayAttendance, startAttendance, stopAttendance,
+    getRewardsAndRevenue
 };

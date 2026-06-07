@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import api from '../api';
+import { Loader2 } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError('');
     try {
       const res = await api.post('/auth/login', { email, password });
       if (res.data.user.role === 'staff') {
@@ -16,9 +20,11 @@ export default function Login() {
         window.location.href = '/';
       } else {
         setError('Only staff can login here.');
+        setIsLoading(false);
       }
     } catch (err) {
       setError('Invalid credentials');
+      setIsLoading(false);
     }
   };
 
@@ -70,9 +76,17 @@ export default function Login() {
           </div>
           <button 
             type="submit" 
-            className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors shadow-md hover:shadow-lg"
+            disabled={isLoading}
+            className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Access My Dashboard
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Logging in...
+              </>
+            ) : (
+              'Access My Dashboard'
+            )}
           </button>
         </form>
       </div>
