@@ -7,6 +7,7 @@ import TaskAssignment from './pages/TaskAssignment';
 import FundManagement from './pages/FundManagement';
 import AttendanceViewer from './pages/AttendanceViewer';
 import CustomTasks from './pages/CustomTasks';
+import TaskViewer from './pages/TaskViewer';
 
 function App() {
   const isAuthenticated = !!localStorage.getItem('token');
@@ -22,6 +23,7 @@ function App() {
             <Route path="staff" element={<StaffManagement />} />
             <Route path="custom-tasks" element={<CustomTasks />} />
             <Route path="tasks" element={<TaskAssignment />} />
+            <Route path="tasks-view" element={<TaskViewer />} />
             <Route path="funds" element={<FundManagement />} />
             <Route path="attendance" element={<AttendanceViewer />} />
           </Route>

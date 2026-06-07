@@ -4,6 +4,39 @@ import { Calendar, MapPin, Clock, CheckCircle, User, Filter, AlertCircle, Chevro
 import { showLoader, closeLoader, showAlert } from '../utils/swalUtils';
 
 export default function AttendanceViewer() {
+  const AddressDisplay = ({ coords }) => {
+    const [address, setAddress] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const fetchAddress = async () => {
+      setLoading(true);
+      try {
+        const [lat, lon] = coords.split(',').map(s => s.trim());
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+        const data = await res.json();
+        setAddress(data.display_name || 'Address not found');
+      } catch (err) {
+        setAddress('Error fetching address');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!coords) return null;
+
+    return (
+      <div className="mt-1.5 text-xs bg-gray-50 p-1.5 rounded border border-gray-100">
+        {!address && !loading && (
+          <button onClick={fetchAddress} className="text-indigo-600 hover:underline font-semibold flex items-center gap-1">
+            <MapPin size={12}/> Fetch Address
+          </button>
+        )}
+        {loading && <span className="text-gray-400 animate-pulse">Fetching...</span>}
+        {address && <span className="text-gray-600 font-medium">{address}</span>}
+      </div>
+    );
+  };
+
   const [attendanceList, setAttendanceList] = useState([]);
   const [filterDate, setFilterDate] = useState(''); // Empty means all dates
   const [page, setPage] = useState(1);
@@ -35,6 +68,33 @@ export default function AttendanceViewer() {
     if (!location) return '#';
     // If it looks like coordinates or any text, google maps search handles it well
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+  };
+
+  const calculateWorkedHours = (startTimeStr, endTimeStr) => {
+    if (!startTimeStr || !endTimeStr) return null;
+    const parseTime = (timeStr) => {
+      const parts = timeStr.split(' ');
+      const time = parts[0];
+      const modifier = parts[1];
+      let [hours, minutes, seconds] = time.split(':');
+      if (hours === '12') hours = '00';
+      if (modifier && modifier.toUpperCase() === 'PM') hours = parseInt(hours, 10) + 12;
+      const d = new Date();
+      d.setHours(parseInt(hours, 10), parseInt(minutes, 10), parseInt(seconds || 0, 10), 0);
+      return d;
+    };
+  
+    try {
+      const start = parseTime(startTimeStr);
+      const end = parseTime(endTimeStr);
+      let diffMs = end - start;
+      if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
+      const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      return `${diffHrs}h ${diffMins}m`;
+    } catch (e) {
+      return 'N/A';
+    }
   };
 
   return (
@@ -108,19 +168,36 @@ export default function AttendanceViewer() {
                     <div className="flex flex-col gap-1.5 text-sm font-medium">
                       <span className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-2 py-1 rounded w-max"><Clock size={14}/> In: {log.start_time || 'N/A'}</span>
                       <span className="flex items-center gap-2 text-rose-600 bg-rose-50 px-2 py-1 rounded w-max"><Clock size={14}/> Out: {log.end_time || 'Working'}</span>
+                      {log.start_time && log.end_time && (
+                        <span className="flex items-center gap-2 text-indigo-600 bg-indigo-50 px-2 py-1 rounded w-max mt-1 font-bold border border-indigo-100">
+                          Total: {calculateWorkedHours(log.start_time, log.end_time)}
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="p-5">
                     <div className="flex flex-col gap-2 text-sm text-gray-600">
-                      <a href={getMapLink(log.start_location)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors">
-                        <MapPin size={16} className="text-emerald-500"/> View Start GPS
-                      </a>
-                      {log.end_location ? (
-                        <a href={getMapLink(log.end_location)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors">
-                          <MapPin size={16} className="text-rose-500"/> View End GPS
+                      <div>
+                        <a href={getMapLink(log.start_location)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors font-semibold">
+                          <MapPin size={16} className="text-emerald-500"/> Start GPS
                         </a>
+                        {log.start_location && (
+                          <>
+                            <span className="text-xs text-gray-400 font-mono mt-1 block">{log.start_location}</span>
+                            <AddressDisplay coords={log.start_location} />
+                          </>
+                        )}
+                      </div>
+                      {log.end_location ? (
+                        <div className="pt-2 border-t border-gray-100">
+                          <a href={getMapLink(log.end_location)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors font-semibold">
+                            <MapPin size={16} className="text-rose-500"/> End GPS
+                          </a>
+                          <span className="text-xs text-gray-400 font-mono mt-1 block">{log.end_location}</span>
+                          <AddressDisplay coords={log.end_location} />
+                        </div>
                       ) : (
-                        <span className="flex items-center gap-1.5 text-gray-400">
+                        <span className="flex items-center gap-1.5 text-gray-400 pt-2 border-t border-gray-100">
                           <MapPin size={16} className="text-gray-300"/> Not Checked Out
                         </span>
                       )}

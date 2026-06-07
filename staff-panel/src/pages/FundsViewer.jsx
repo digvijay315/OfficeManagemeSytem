@@ -1,17 +1,15 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { IndianRupee, History, Wallet } from 'lucide-react';
 
 export default function FundsViewer() {
   const [data, setData] = useState({ salary: 0, totalTaken: 0, remaining: 0, funds: [] });
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
     const fetchFunds = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:5000/api/staff/funds', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await api.get('/staff/funds');
         setData(res.data);
       } catch (err) {
         console.error('Error fetching funds');
@@ -23,6 +21,18 @@ export default function FundsViewer() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       
+      {/* Welcome Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-800 text-white p-8 shadow-lg">
+        <div className="relative z-10">
+          <h2 className="text-3xl font-bold mb-2">Good {new Date().getHours() < 12 ? 'Morning' : 'Afternoon'}, {user.name}!</h2>
+          <p className="text-emerald-100 max-w-xl">
+            Here you can track your base salary, view any advanced funds taken, and monitor your remaining balance for the month.
+          </p>
+        </div>
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white opacity-10 blur-2xl"></div>
+        <div className="absolute bottom-0 right-32 w-32 h-32 rounded-full bg-emerald-400 opacity-20 blur-xl"></div>
+      </div>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">

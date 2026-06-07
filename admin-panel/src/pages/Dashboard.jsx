@@ -2,28 +2,24 @@ import { useState, useEffect } from 'react';
 import api from '../api';
 import { Users, ClipboardList, AlertCircle, CalendarCheck, BarChart3 } from 'lucide-react';
 import { showLoader, closeLoader, showAlert } from '../utils/swalUtils';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({ staffCount: 0, taskCount: 0, attendanceCount: 0 });
+  const [stats, setStats] = useState({ staffCount: 0, taskCount: 0, attendanceCount: 0, emergencyCount: 0 });
+  const [charts, setCharts] = useState({ attendance: [], taskCompletion: [] });
 
   useEffect(() => {
     const fetchStats = async () => {
       showLoader('Loading Dashboard', 'Fetching latest reports...');
       try {
-        const [staffRes, tasksRes, attRes] = await Promise.all([
-          api.get('/admin/staff'),
-          // We can just fetch all or we'd ideally have a stats API. For simplicity, just fetch existing lists or ignore
-          // Since we don't have a dedicated stats endpoint, we just mock or use the existing APIs
-          // to get array lengths
-          api.get('/admin/staff'), // just for simulation
-          api.get('/admin/attendance')
-        ]);
-        
+        const res = await api.get('/admin/dashboard-stats');
         setStats({
-          staffCount: staffRes.data.total || 0,
-          taskCount: 15, // Dummy value since we don't have a "get all tasks" admin API currently
-          attendanceCount: attRes.data.total || 0
+          staffCount: res.data.staffCount || 0,
+          taskCount: res.data.taskCount || 0,
+          attendanceCount: res.data.attendanceCount || 0,
+          emergencyCount: res.data.emergencyCount || 0
         });
+        setCharts(res.data.charts || { attendance: [], taskCompletion: [] });
         closeLoader();
       } catch (err) {
         closeLoader();
@@ -32,6 +28,8 @@ export default function Dashboard() {
     };
     fetchStats();
   }, []);
+
+  const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -64,7 +62,7 @@ export default function Dashboard() {
             <ClipboardList size={28} />
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-500">Tasks Assigned</p>
+            <p className="text-sm font-medium text-gray-500">Today's Tasks</p>
             <p className="text-3xl font-bold text-gray-800">{stats.taskCount}</p>
           </div>
         </div>
@@ -85,20 +83,59 @@ export default function Dashboard() {
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500">Emergency Tasks</p>
-            <p className="text-3xl font-bold text-gray-800">2</p>
+            <p className="text-3xl font-bold text-gray-800">{stats.emergencyCount}</p>
           </div>
         </div>
       </div>
       
-      {/* Chart Placeholder Area */}
+      {/* Chart Area */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm h-80 flex flex-col justify-center items-center text-gray-400">
-          <p className="font-medium">Attendance Chart</p>
-          <p className="text-sm">(Coming soon)</p>
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm h-96 flex flex-col">
+          <h3 className="font-bold text-gray-800 mb-6">Attendance (Last 7 Days)</h3>
+          <div className="flex-1 w-full min-h-0">
+            {charts.attendance.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={charts.attendance}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9ca3af'}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af'}} />
+                  <Tooltip cursor={{fill: '#f3f4f6'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                  <Bar dataKey="Attendance" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-400">No attendance data</div>
+            )}
+          </div>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm h-80 flex flex-col justify-center items-center text-gray-400">
-          <p className="font-medium">Task Completion Rate</p>
-          <p className="text-sm">(Coming soon)</p>
+
+        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm h-96 flex flex-col">
+          <h3 className="font-bold text-gray-800 mb-6">Task Completion Rate (Last 7 Days)</h3>
+          <div className="flex-1 w-full min-h-0">
+            {charts.taskCompletion.length > 0 && charts.taskCompletion.some(c => c.value > 0) ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={charts.taskCompletion}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={80}
+                    outerRadius={120}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {charts.taskCompletion.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-400">No task data</div>
+            )}
+          </div>
         </div>
       </div>
     </div>

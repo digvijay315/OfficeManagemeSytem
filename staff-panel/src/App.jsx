@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Attendance from './pages/Attendance';
 import TaskList from './pages/TaskList';
 import FundsViewer from './pages/FundsViewer';
+import Overview from './pages/Overview';
 
 function App() {
   const isAuthenticated = !!localStorage.getItem('token');
@@ -14,7 +15,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         {isAuthenticated ? (
           <Route path="/" element={<Dashboard />}>
-            <Route index element={<Navigate to="/attendance" />} />
+            <Route index element={<Overview />} />
             <Route path="attendance" element={<Attendance />} />
             <Route path="tasks" element={<TaskList />} />
             <Route path="funds" element={<FundsViewer />} />

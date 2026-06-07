@@ -1,11 +1,11 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Users, ClipboardList, Wallet, Calendar, LogOut, Menu, X, LayoutDashboard, ListPlus } from 'lucide-react';
+import { Users, ClipboardList, Wallet, Calendar, LogOut, Menu, X, LayoutDashboard, ListPlus, CheckSquare } from 'lucide-react';
 import { useState } from 'react';
 import { showConfirm } from '../utils/swalUtils';
 
 export default function Layout() {
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Default false on mobile, we can use CSS for desktop
+  const [sidebarOpen, setSidebarOpen] = useState(true); // Default true
 
   const handleLogout = async () => {
     const confirmed = await showConfirm('Logout', 'Are you sure you want to logout?');
@@ -21,6 +21,7 @@ export default function Layout() {
     { path: '/staff', name: 'Manage Staff', icon: <Users size={20} /> },
     { path: '/custom-tasks', name: 'Task Library', icon: <ListPlus size={20} /> },
     { path: '/tasks', name: 'Assign Tasks', icon: <ClipboardList size={20} /> },
+    { path: '/tasks-view', name: 'View Tasks', icon: <CheckSquare size={20} /> },
     { path: '/funds', name: 'Fund Management', icon: <Wallet size={20} /> },
     { path: '/attendance', name: 'Attendance', icon: <Calendar size={20} /> },
   ];
@@ -56,7 +57,7 @@ export default function Layout() {
               to={item.path}
               title={!sidebarOpen ? item.name : ''}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors whitespace-nowrap ${
-                location.pathname.startsWith(item.path)
+                location.pathname === item.path
                   ? 'bg-indigo-800 text-white' 
                   : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'
               }`}
