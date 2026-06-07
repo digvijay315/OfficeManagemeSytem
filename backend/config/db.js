@@ -3,9 +3,10 @@ const User = require('../models/User');
 
 const connectDB = async () => {
     try {
-        await mongoose.connect('mongodb+srv://digvijay:digvijay@cluster0.yisihts.mongodb.net/officeStaffManagement?retryWrites=true&w=majority');
+        await mongoose.connect('mongodb+srv://snetdumka_db_user:wLRPzpTnq0iHZn8v@cluster0.lw6gxqv.mongodb.net/officeStaffManagement?retryWrites=true&w=majority');
         
         console.log('MongoDB connected successfully');
+        
         
         // Ensure default admin exists
         const adminCheck = await User.findOne({ email: 'admin@gmail.com' });
