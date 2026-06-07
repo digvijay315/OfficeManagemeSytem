@@ -2,9 +2,52 @@ import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { AlertCircle, CheckCircle, Clock, PlusCircle, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 
+const TaskCard = ({ task, onComplete }) => {
+  const [comment, setComment] = useState('');
+
+  return (
+    <div className={`p-4 rounded-xl border ${task.type === 'emergency' ? 'border-red-200 bg-red-50' : 'border-white bg-white'} shadow-sm`}>
+      <div className="flex justify-between items-start mb-2">
+        <h5 className={`font-bold ${task.type === 'emergency' ? 'text-red-700' : 'text-gray-800'}`}>
+          {task.title}
+        </h5>
+        {task.type === 'emergency' && (
+          <span className="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-md font-bold">Emergency</span>
+        )}
+        {task.type === 'additional' && (
+          <span className="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-md font-bold">Self Assigned</span>
+        )}
+      </div>
+      <p className="text-gray-600 text-sm mb-4">{task.description}</p>
+      
+      {task.status !== 'completed' ? (
+        <div className="mt-4 space-y-3">
+          <input 
+            type="text" 
+            placeholder="Add comment (optional)" 
+            className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+          <button 
+            onClick={() => onComplete(task._id, comment)}
+            className={`w-full py-2 rounded-lg text-white text-sm font-bold transition-colors flex justify-center items-center gap-2 ${task.type === 'emergency' ? 'bg-red-600 hover:bg-red-700 shadow-sm shadow-red-200' : 'bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200'}`}
+          >
+            <CheckCircle size={16} /> Mark as Completed
+          </button>
+        </div>
+      ) : (
+        <div className="mt-4 pt-3 border-t border-gray-100">
+          <p className="text-sm text-emerald-600 flex items-center gap-1 font-semibold"><CheckCircle size={14}/> Completed</p>
+          {task.comment && <p className="text-xs text-gray-500 mt-1 bg-gray-50 p-2 rounded border border-gray-100">"{task.comment}"</p>}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function TaskList() {
   const [groupedTasks, setGroupedTasks] = useState([]);
-  const [comments, setComments] = useState({});
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', description: '' });
   const [expandedRows, setExpandedRows] = useState({});
@@ -34,9 +77,9 @@ export default function TaskList() {
     fetchGroupedTasks(page);
   }, [page]);
 
-  const handleComplete = async (taskId) => {
+  const handleComplete = async (taskId, submittedComment) => {
     try {
-      await api.put(`/staff/tasks/${taskId}`, { status: 'completed', comment: comments[taskId] || '' });
+      await api.put(`/staff/tasks/${taskId}`, { status: 'completed', comment: submittedComment || '' });
       // Refresh the current page
       fetchGroupedTasks(page);
     } catch (err) {
@@ -177,43 +220,7 @@ export default function TaskList() {
                                     <h4 className="text-sm font-bold text-gray-500 mb-4 uppercase tracking-wider">Detailed Tasks for {group.date}</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {tasks.map(task => (
-                                            <div key={task._id} className={`p-4 rounded-xl border ${task.type === 'emergency' ? 'border-red-200 bg-red-50' : 'border-white bg-white'} shadow-sm`}>
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <h5 className={`font-bold ${task.type === 'emergency' ? 'text-red-700' : 'text-gray-800'}`}>
-                                                    {task.title}
-                                                    </h5>
-                                                    {task.type === 'emergency' && (
-                                                    <span className="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-md font-bold">Emergency</span>
-                                                    )}
-                                                    {task.type === 'additional' && (
-                                                    <span className="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-md font-bold">Self Assigned</span>
-                                                    )}
-                                                </div>
-                                                <p className="text-gray-600 text-sm mb-4">{task.description}</p>
-                                                
-                                                {task.status !== 'completed' ? (
-                                                    <div className="mt-4 space-y-3">
-                                                    <input 
-                                                        type="text" 
-                                                        placeholder="Add comment (optional)" 
-                                                        className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        value={comments[task._id] || ''}
-                                                        onChange={(e) => setComments({...comments, [task._id]: e.target.value})}
-                                                    />
-                                                    <button 
-                                                        onClick={() => handleComplete(task._id)}
-                                                        className={`w-full py-2 rounded-lg text-white text-sm font-bold transition-colors flex justify-center items-center gap-2 ${task.type === 'emergency' ? 'bg-red-600 hover:bg-red-700 shadow-sm shadow-red-200' : 'bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200'}`}
-                                                    >
-                                                        <CheckCircle size={16} /> Mark as Completed
-                                                    </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="mt-4 pt-3 border-t border-gray-100">
-                                                    <p className="text-sm text-emerald-600 flex items-center gap-1 font-semibold"><CheckCircle size={14}/> Completed</p>
-                                                    {task.comment && <p className="text-xs text-gray-500 mt-1 bg-gray-50 p-2 rounded border border-gray-100">"{task.comment}"</p>}
-                                                    </div>
-                                                )}
-                                            </div>
+                                            <TaskCard key={task._id} task={task} onComplete={handleComplete} />
                                         ))}
                                     </div>
                                 </div>

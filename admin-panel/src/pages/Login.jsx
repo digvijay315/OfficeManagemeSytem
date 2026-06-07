@@ -3,8 +3,8 @@ import api from '../api';
 import { showAlert, showLoader, closeLoader } from '../utils/swalUtils';
 
 export default function Login() {
-  const [email, setEmail] = useState('admin@gmail.com');
-  const [password, setPassword] = useState('admin@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleLogin = async (e) => {
@@ -44,6 +44,7 @@ export default function Login() {
               className="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@gmail.com"
               required 
             />
           </div>
@@ -54,6 +55,7 @@ export default function Login() {
               className="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="********"
               required 
             />
           </div>

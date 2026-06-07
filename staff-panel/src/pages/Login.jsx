@@ -40,6 +40,7 @@ export default function Login() {
               className="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
               required 
             />
           </div>
@@ -50,6 +51,7 @@ export default function Login() {
               className="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="********"
               required 
             />
           </div>
