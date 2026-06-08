@@ -151,10 +151,19 @@ const deleteSubadmin = async (req, res) => {
     }
 };
 
+const { sendToUser } = require('../utils/sse');
+
 const assignTask = async (req, res) => {
     const { staff_id, title, description, date, type } = req.body;
     try {
         const task = await Task.create({ staff_id, title, description, date, type: type || 'regular' });
+        
+        sendToUser(staff_id, 'new_task', {
+            id: task._id,
+            title,
+            message: `New task assigned: ${title}`
+        });
+
         res.json(task);
     } catch (error) {
         res.status(400).json({ error: 'Error assigning task' });
@@ -435,6 +444,15 @@ const verifyTask = async (req, res) => {
             rewardAmount: rewardAmount || 0,
             rewardSlipUrls
         }, { new: true });
+
+        if (verificationStatus === 'verified' && rewardAmount > 0) {
+            sendToUser(task.staff_id, 'reward_received', {
+                taskId: task._id,
+                amount: rewardAmount,
+                message: `You received a reward of ₹${rewardAmount} for an additional task!`
+            });
+        }
+
         res.json(task);
     } catch (err) {
         res.status(500).json({ error: 'Error verifying task' });

@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Clock, CheckSquare, IndianRupee, LogOut, Menu, LayoutDashboard, X, Gift, ChevronDown, User as UserIcon, Key } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProfileModal from '../components/ProfileModal';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 
@@ -18,6 +18,91 @@ export default function Dashboard() {
     localStorage.removeItem('user');
     window.location.href = '/login';
   };
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      import('../api').then(({ default: api }) => {
+        // 1. Fetch profile and tasks on mount to check for pending tasks and new rewards
+        Promise.all([
+          api.get('/staff/profile'),
+          api.get('/staff/tasks')
+        ]).then(([profileRes, tasksRes]) => {
+          const profile = profileRes.data;
+          const tasks = tasksRes.data;
+
+          if (tasks && tasks.length > 0) {
+            const pendingTasks = tasks.filter(t => t.status === 'pending');
+            
+            const rewardedTasks = tasks.filter(t => t.verificationStatus === 'verified' && t.rewardAmount > 0);
+            const lastSeenRewardCount = profile.lastSeenRewardCount || 0;
+            const newRewards = rewardedTasks.length - lastSeenRewardCount;
+
+            if (pendingTasks.length > 0 || newRewards > 0) {
+              import('sweetalert2').then(({ default: Swal }) => {
+                setTimeout(() => {
+                  let message = '';
+                  if (pendingTasks.length > 0) message += `You have <b>${pendingTasks.length} pending task(s)</b> to complete.<br/><br/>`;
+                  if (newRewards > 0) {
+                    message += `<span style="color:#059669; font-weight:bold;">You received rewards for ${newRewards} task(s)! 🎉</span>`;
+                    // Update the backend
+                    api.put('/staff/update-reward-count', { count: rewardedTasks.length }).catch(e => console.error(e));
+                  }
+
+                  Swal.fire({
+                    title: 'Updates for You!',
+                    html: message,
+                    icon: 'info',
+                    confirmButtonText: 'Got it!',
+                    confirmButtonColor: '#059669'
+                  });
+                  new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(e => console.error("Audio error:", e));
+                }, 1500);
+              });
+            }
+          }
+        }).catch(err => console.error("Error fetching data", err));
+
+        // 2. Setup SSE Connection
+        const url = `${api.defaults.baseURL}/staff/notifications/stream?token=${token}`;
+        const source = new EventSource(url);
+        
+        source.addEventListener('new_task', (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            import('sweetalert2').then(({ default: Swal }) => {
+              Swal.fire({
+                title: 'New Task Assigned!',
+                text: data.message,
+                icon: 'info',
+                confirmButtonText: 'Got it!',
+                confirmButtonColor: '#059669' // emerald-600
+              });
+              new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(e => console.error("Audio error:", e));
+            });
+          } catch(err) {}
+        });
+
+        source.addEventListener('reward_received', (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            import('sweetalert2').then(({ default: Swal }) => {
+              Swal.fire({
+                title: 'Reward Received! 🎉',
+                text: data.message,
+                icon: 'success',
+                confirmButtonText: 'Awesome!',
+                confirmButtonColor: '#059669'
+              });
+              new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(e => console.error("Audio error:", e));
+            });
+          } catch(err) {}
+        });
+
+        return () => source.close();
+      });
+    }
+  }, []);
 
   const navItems = [
     { path: '/', name: 'Dashboard', icon: <LayoutDashboard size={20} /> },

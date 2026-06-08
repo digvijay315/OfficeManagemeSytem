@@ -18,7 +18,8 @@ const userSchema = new mongoose.Schema({
     accountNo: String,
     ifscCode: String,
     branchName: String,
-    joinedDate: String
+    joinedDate: String,
+    lastSeenRewardCount: { type: Number, default: 0 }
 }, {
     toJSON: { virtuals: true },
     toObject: { virtuals: true }

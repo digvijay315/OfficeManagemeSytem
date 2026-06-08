@@ -140,6 +140,8 @@ const stopAttendance = async (req, res) => {
     res.json({ success: true });
 };
 
+const { sendToAdmins } = require('../utils/sse');
+
 const requestAdvance = async (req, res) => {
     const { amount, description, date } = req.body;
     try {
@@ -150,6 +152,14 @@ const requestAdvance = async (req, res) => {
             date,
             status: 'pending'
         });
+        
+        sendToAdmins('advance_request', {
+            id: fund._id,
+            staffName: req.user.name,
+            amount: amount,
+            message: `${req.user.name} requested an advance of ₹${amount}.`
+        });
+
         res.json(fund);
     } catch (err) {
         res.status(500).json({ error: 'Error requesting advance' });
@@ -231,9 +241,20 @@ const changePassword = async (req, res) => {
     }
 };
 
+const updateRewardCount = async (req, res) => {
+    const { count } = req.body;
+    try {
+        await User.findByIdAndUpdate(req.user._id, { lastSeenRewardCount: count });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update reward count' });
+    }
+};
+
 module.exports = {
     getTasks, getGroupedTasks, updateTask, createAdditionalTask,
     getFunds, requestAdvance,
     getTodayAttendance, startAttendance, stopAttendance,
-    getRewardsAndRevenue, getProfile, updateProfile, changePassword
+    getRewardsAndRevenue, getProfile, updateProfile, changePassword,
+    updateRewardCount
 };

@@ -23,10 +23,69 @@ export default function Layout() {
     window.addEventListener('resize', checkScroll);
     
     const userStr = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    
     if (userStr) {
       try {
         setUser(JSON.parse(userStr));
       } catch (e) {}
+    }
+
+    if (token && userStr) {
+      let userRole = 'admin';
+      try {
+        userRole = JSON.parse(userStr).role;
+      } catch(e) {}
+
+      // Only show fund-related notifications to 'admin'
+      if (userRole === 'admin') {
+        // 1. Fetch pending requests on mount
+        import('../api').then(({ default: api }) => {
+          api.get('/admin/funds/requests').then(res => {
+            if (res.data && res.data.length > 0) {
+              import('sweetalert2').then(({ default: Swal }) => {
+                setTimeout(() => {
+                  Swal.fire({
+                    title: 'Pending Requests!',
+                    text: `You have ${res.data.length} pending advance requests waiting for approval.`,
+                    icon: 'info',
+                    confirmButtonText: 'Got it!',
+                    confirmButtonColor: '#4f46e5'
+                  });
+                  new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(e => console.error("Audio error:", e));
+                }, 1500);
+              });
+            }
+          }).catch(err => console.error("Error fetching pending requests", err));
+        });
+
+        // 2. Setup SSE connection
+        const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        import('../api').then(({ default: api }) => {
+          const url = `${api.defaults.baseURL}/admin/notifications/stream?token=${token}`;
+          const source = new EventSource(url);
+          
+          source.addEventListener('advance_request', (e) => {
+            try {
+              const data = JSON.parse(e.data);
+              import('sweetalert2').then(({ default: Swal }) => {
+                Swal.fire({
+                  title: 'New Advance Request!',
+                  text: data.message,
+                  icon: 'warning',
+                  confirmButtonText: 'Got it!',
+                  confirmButtonColor: '#4f46e5'
+                });
+                new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(e => console.error("Audio error:", e));
+              });
+            } catch(err) {}
+          });
+
+          return () => {
+            source.close();
+          };
+        });
+      }
     }
     
     return () => window.removeEventListener('resize', checkScroll);

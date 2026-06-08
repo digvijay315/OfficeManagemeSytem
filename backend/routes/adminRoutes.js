@@ -1,5 +1,6 @@
 const express = require('express');
 const adminMiddleware = require('../middlewares/adminMiddleware');
+const { addClient } = require('../utils/sse');
 const {
     getStaff, createStaff, updateStaff, deleteStaff,
     getSubadmins, createSubadmin, updateSubadmin, deleteSubadmin,
@@ -14,6 +15,8 @@ const router = express.Router();
 // Apply adminMiddleware to all routes in this file
 // Notice: authMiddleware should be applied before this router in server.js
 router.use(adminMiddleware);
+
+router.get('/notifications/stream', addClient);
 
 router.get('/dashboard-stats', getDashboardStats);
 

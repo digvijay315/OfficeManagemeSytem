@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import { AlertCircle, CheckCircle, Clock, PlusCircle, ChevronDown, ChevronUp, AlertTriangle, Plus, X } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, PlusCircle, ChevronDown, ChevronUp, AlertTriangle, Plus, X, Camera, Upload } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 const TaskCard = ({ task, onComplete }) => {
@@ -36,13 +36,44 @@ const TaskCard = ({ task, onComplete }) => {
             value={comment}
             onChange={(e) => setComment(e.target.value)}
           />
-          <input 
-            type="file" 
-            multiple
-            accept="image/*"
-            onChange={(e) => setFiles(Array.from(e.target.files))}
-            className="w-full text-sm text-gray-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 outline-none border border-gray-200 rounded-lg cursor-pointer"
-          />
+          <div className="flex gap-2">
+            <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors border border-blue-200 shadow-sm">
+              <Upload size={16}/> Gallery
+              <input 
+                type="file" 
+                multiple
+                accept="image/*"
+                onChange={(e) => setFiles(prev => [...prev, ...Array.from(e.target.files)])}
+                className="hidden"
+              />
+            </label>
+            <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 py-2 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-semibold hover:bg-emerald-100 transition-colors border border-emerald-200 shadow-sm">
+              <Camera size={16}/> Camera
+              <input 
+                type="file" 
+                accept="image/*"
+                capture="environment"
+                onChange={(e) => setFiles(prev => [...prev, ...Array.from(e.target.files)])}
+                className="hidden"
+              />
+            </label>
+          </div>
+          
+          {files.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2 p-2 bg-gray-50 rounded-lg border border-gray-100">
+              {files.map((f, i) => (
+                <div key={i} className="relative w-14 h-14 rounded-lg border border-gray-200 overflow-hidden shadow-sm group">
+                  <img src={URL.createObjectURL(f)} alt="Preview" className="w-full h-full object-cover" />
+                  <button 
+                    onClick={() => setFiles(prev => prev.filter((_, idx) => idx !== i))} 
+                    className="absolute top-0 right-0 bg-red-500/80 hover:bg-red-600 text-white p-1 rounded-bl-lg backdrop-blur-sm transition-colors"
+                  >
+                    <X size={12}/>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <button 
             disabled={isUploading}
             onClick={() => {
@@ -472,13 +503,44 @@ export default function TaskList() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Upload Images (Optional)</label>
-                <input 
-                  type="file" 
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => setNewFiles(Array.from(e.target.files))}
-                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 outline-none border border-gray-300 rounded-xl cursor-pointer"
-                />
+                <div className="flex gap-2">
+                  <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 py-2.5 bg-blue-50 text-blue-700 rounded-xl text-sm font-semibold hover:bg-blue-100 transition-colors border border-blue-200 shadow-sm">
+                    <Upload size={18}/> Gallery
+                    <input 
+                      type="file" 
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => setNewFiles(prev => [...prev, ...Array.from(e.target.files)])}
+                      className="hidden"
+                    />
+                  </label>
+                  <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-semibold hover:bg-emerald-100 transition-colors border border-emerald-200 shadow-sm">
+                    <Camera size={18}/> Camera
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      capture="environment"
+                      onChange={(e) => setNewFiles(prev => [...prev, ...Array.from(e.target.files)])}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                {newFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    {newFiles.map((f, i) => (
+                      <div key={i} className="relative w-16 h-16 rounded-xl border border-gray-200 overflow-hidden shadow-sm group">
+                        <img src={URL.createObjectURL(f)} alt="Preview" className="w-full h-full object-cover" />
+                        <button 
+                          type="button"
+                          onClick={() => setNewFiles(prev => prev.filter((_, idx) => idx !== i))} 
+                          className="absolute top-0 right-0 bg-red-500/80 hover:bg-red-600 text-white p-1 rounded-bl-xl backdrop-blur-sm transition-colors"
+                        >
+                          <X size={14}/>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex gap-3 pt-4">
                 <button 

@@ -3,8 +3,8 @@ import Swal from 'sweetalert2';
 // Configure SweetAlert to use Tailwind classes for buttons so they are always visible
 const customSwal = Swal.mixin({
   customClass: {
-    confirmButton: 'bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 ml-2 inline-block',
-    cancelButton: 'bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium hover:bg-gray-300 inline-block',
+    confirmButton: 'bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 mx-1.5 inline-block',
+    cancelButton: 'bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium hover:bg-gray-300 mx-1.5 inline-block',
   },
   buttonsStyling: false
 });
