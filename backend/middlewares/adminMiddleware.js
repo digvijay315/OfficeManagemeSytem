@@ -1,5 +1,5 @@
 const adminMiddleware = (req, res, next) => {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+    if (!['admin', 'subadmin'].includes(req.user.role)) return res.status(403).json({ error: 'Forbidden' });
     next();
 };
 

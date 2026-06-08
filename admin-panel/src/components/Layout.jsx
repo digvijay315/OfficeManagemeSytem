@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Users, ClipboardList, Wallet, Calendar, LogOut, Menu, X, LayoutDashboard, ListPlus, CheckSquare, ChevronDown } from 'lucide-react';
+import { Users, ClipboardList, Wallet, Calendar, LogOut, Menu, X, LayoutDashboard, ListPlus, CheckSquare, ChevronDown, Shield } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { showConfirm } from '../utils/swalUtils';
 
@@ -16,9 +16,19 @@ export default function Layout() {
     }
   };
 
+  const [user, setUser] = useState(null);
+
   useEffect(() => {
     checkScroll();
     window.addEventListener('resize', checkScroll);
+    
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        setUser(JSON.parse(userStr));
+      } catch (e) {}
+    }
+    
     return () => window.removeEventListener('resize', checkScroll);
   }, []);
 
@@ -33,15 +43,16 @@ export default function Layout() {
 
   const navItems = [
     { path: '/dashboard', name: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+    { path: '/subadmins', name: 'Manage Subadmin', icon: <Shield size={20} /> },
     { path: '/staff', name: 'Manage Staff', icon: <Users size={20} /> },
     { path: '/custom-tasks', name: 'Task Library', icon: <ListPlus size={20} /> },
     { path: '/tasks', name: 'Assign Tasks', icon: <ClipboardList size={20} /> },
     { path: '/tasks-view', name: 'View Tasks', icon: <CheckSquare size={20} /> },
     { path: '/task-verification', name: 'Task Verification', icon: <CheckSquare size={20} /> },
-    { path: '/revenue-reports', name: 'Revenue & Rewards', icon: <Wallet size={20} /> },
-    { path: '/funds', name: 'Fund Management', icon: <Wallet size={20} /> },
+    { path: '/revenue-reports', name: 'Revenue & Rewards', icon: <Wallet size={20} />, hideFor: ['subadmin'] },
+    { path: '/funds', name: 'Fund Management', icon: <Wallet size={20} />, hideFor: ['subadmin'] },
     { path: '/attendance', name: 'Attendance', icon: <Calendar size={20} /> },
-  ];
+  ].filter(item => !(item.hideFor && item.hideFor.includes(user?.role)));
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -129,12 +140,12 @@ export default function Layout() {
           </div>
 
           <div className="flex items-center gap-3 pr-4">
-            <div className="w-9 h-9 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold border border-indigo-200">
-              A
+            <div className="w-9 h-9 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold border border-indigo-200 uppercase">
+              {user?.name ? user.name.charAt(0) : 'A'}
             </div>
             <div className="hidden md:block">
-              <p className="text-sm font-bold text-gray-800 leading-tight">Admin</p>
-              <p className="text-xs text-gray-500">admin@gmail.com</p>
+              <p className="text-sm font-bold text-gray-800 leading-tight capitalize">{user?.name || 'Admin'}</p>
+              <p className="text-xs text-gray-500">{user?.role || 'admin'}</p>
             </div>
           </div>
         </header>

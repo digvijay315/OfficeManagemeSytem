@@ -13,12 +13,12 @@ export default function Login() {
     try {
       const res = await api.post('/auth/login', { email, password });
       closeLoader();
-      if (res.data.user.role === 'admin') {
+      if (res.data.user.role === 'admin' || res.data.user.role === 'subadmin') {
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('user', JSON.stringify(res.data.user));
         window.location.href = '/';
       } else {
-        showAlert('Access Denied', 'Only admin can login here.', 'error');
+        showAlert('Access Denied', 'Only admin or subadmin can login here.', 'error');
       }
     } catch (err) {
       closeLoader();

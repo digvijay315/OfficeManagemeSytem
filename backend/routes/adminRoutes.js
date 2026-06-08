@@ -2,6 +2,7 @@ const express = require('express');
 const adminMiddleware = require('../middlewares/adminMiddleware');
 const {
     getStaff, createStaff, updateStaff, deleteStaff,
+    getSubadmins, createSubadmin, updateSubadmin, deleteSubadmin,
     assignTask, getGroupedTasks, recordFund, getFundsSummary, paySalary,
     getAttendance, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
     getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest,
@@ -20,6 +21,11 @@ router.get('/staff', getStaff);
 router.post('/staff', createStaff);
 router.put('/staff/:id', updateStaff);
 router.delete('/staff/:id', deleteStaff);
+
+router.get('/subadmins', getSubadmins);
+router.post('/subadmins', createSubadmin);
+router.put('/subadmins/:id', updateSubadmin);
+router.delete('/subadmins/:id', deleteSubadmin);
 
 router.get('/tasks/pending-verification', getPendingVerificationTasks);
 router.post('/tasks', assignTask);

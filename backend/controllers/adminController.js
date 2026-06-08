@@ -4,7 +4,7 @@ const Fund = require('../models/Fund');
 const SalaryPayment = require('../models/SalaryPayment');
 const Attendance = require('../models/Attendance');
 const PredefinedTask = require('../models/PredefinedTask');
-const { staffSchema } = require('../validations/staffValidation');
+const { staffSchema, subadminSchema } = require('../validations/staffValidation');
 const mongoose = require('mongoose');
 const { getPagination } = require('../utils/pagination');
 
@@ -110,6 +110,44 @@ const deleteStaff = async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         res.status(400).json({ error: 'Error deleting staff' });
+    }
+};
+
+const getSubadmins = async (req, res) => {
+    const { page, limit, skip } = getPagination(req);
+    const total = await User.countDocuments({ role: 'subadmin' });
+    const subadmins = await User.find({ role: 'subadmin' }).skip(skip).limit(limit).sort({ _id: -1 });
+    res.json({ data: subadmins, total, page, pages: Math.ceil(total / limit) });
+};
+
+const createSubadmin = async (req, res) => {
+    const { error } = subadminSchema.validate(req.body);
+    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    const { name, email, password, mobile } = req.body;
+    try {
+        const subadmin = await User.create({ name, email, password, role: 'subadmin', mobile });
+        res.json(subadmin);
+    } catch (err) {
+        res.status(400).json({ error: 'Error creating subadmin (Email might be duplicate)' });
+    }
+};
+
+const updateSubadmin = async (req, res) => {
+    try {
+        const subadmin = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json(subadmin);
+    } catch (err) {
+        res.status(400).json({ error: 'Error updating subadmin' });
+    }
+};
+
+const deleteSubadmin = async (req, res) => {
+    try {
+        await User.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(400).json({ error: 'Error deleting subadmin' });
     }
 };
 
@@ -452,6 +490,7 @@ const getRevenueReports = async (req, res) => {
 
 module.exports = {
     getStaff, createStaff, updateStaff, deleteStaff,
+    getSubadmins, createSubadmin, updateSubadmin, deleteSubadmin,
     assignTask, getGroupedTasks, recordFund, getFundsSummary, paySalary,
     getAttendance, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
     getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest,
