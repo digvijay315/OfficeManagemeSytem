@@ -154,9 +154,9 @@ const deleteSubadmin = async (req, res) => {
 const { sendToUser } = require('../utils/sse');
 
 const assignTask = async (req, res) => {
-    const { staff_id, title, description, date, type } = req.body;
+    const { staff_id, title, description, date, type, customer } = req.body;
     try {
-        const task = await Task.create({ staff_id, title, description, date, type: type || 'regular' });
+        const task = await Task.create({ staff_id, title, description, date, type: type || 'regular', customer });
         
         sendToUser(staff_id, 'new_task', {
             id: task._id,

@@ -27,6 +27,26 @@ const TaskCard = ({ task, onComplete }) => {
       </div>
       <p className="text-gray-600 text-sm mb-4">{task.description}</p>
       
+      {task.customer && (task.customer.name || task.customer.mobile || task.customer.location?.address || task.customer.location?.lat) && (
+        <div className="mb-4 p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-sm">
+          <h6 className="font-semibold text-blue-800 mb-1.5">Customer Info</h6>
+          {task.customer.name && <p className="text-gray-700 mb-0.5"><span className="font-medium">Name:</span> {task.customer.name}</p>}
+          {task.customer.mobile && <p className="text-gray-700 mb-0.5"><span className="font-medium">Mobile:</span> {task.customer.mobile}</p>}
+          {task.customer.location?.address && <p className="text-gray-700 mb-0.5"><span className="font-medium">Address:</span> {task.customer.location.address}</p>}
+          
+          {task.customer.location?.lat && task.customer.location?.lng && (
+            <a 
+              href={`https://www.google.com/maps/search/?api=1&query=${task.customer.location.lat},${task.customer.location.lng}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 mt-2 text-indigo-700 hover:text-indigo-900 font-semibold bg-indigo-100/70 hover:bg-indigo-200 px-3 py-1.5 rounded-lg transition-colors shadow-sm border border-indigo-200/50"
+            >
+              📍 View on Map
+            </a>
+          )}
+        </div>
+      )}
+
       {task.status !== 'completed' ? (
         <div className="mt-4 space-y-3">
           <input 

@@ -14,7 +14,16 @@ const taskSchema = new mongoose.Schema({
     paymentSlipUrls: [String],
     rewardAmount: { type: Number, default: 0 },
     rewardSlipUrls: [String],
-    verificationStatus: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' }
+    verificationStatus: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+    customer: {
+        name: String,
+        mobile: String,
+        location: {
+            address: String,
+            lat: Number,
+            lng: Number
+        }
+    }
 }, {
     toJSON: { virtuals: true },
     toObject: { virtuals: true }

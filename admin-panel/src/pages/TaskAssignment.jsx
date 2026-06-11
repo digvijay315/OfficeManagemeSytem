@@ -11,7 +11,16 @@ export default function TaskAssignment() {
     title: '',
     description: '',
     date: new Date().toISOString().split('T')[0],
-    type: 'regular'
+    type: 'regular',
+    customer: {
+      name: '',
+      mobile: '',
+      location: {
+        address: '',
+        lat: null,
+        lng: null
+      }
+    }
   });
 
   useEffect(() => {
@@ -57,11 +66,42 @@ export default function TaskAssignment() {
       await api.post('/admin/tasks', formData);
       closeLoader();
       showAlert('Success', 'Task assigned successfully!', 'success');
-      setFormData({ ...formData, title: '', description: '' });
+      setFormData({ 
+        ...formData, 
+        title: '', 
+        description: '',
+        customer: { name: '', mobile: '', location: { address: '', lat: null, lng: null } }
+      });
     } catch (err) {
       closeLoader();
       showAlert('Error', 'Error assigning task', 'error');
     }
+  };
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      showAlert('Error', 'Geolocation is not supported by your browser', 'error');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData(prev => ({
+          ...prev,
+          customer: {
+            ...prev.customer,
+            location: {
+              ...prev.customer.location,
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            }
+          }
+        }));
+        showAlert('Success', 'Location fetched successfully!', 'success');
+      },
+      (error) => {
+        showAlert('Error', 'Unable to retrieve your location', 'error');
+      }
+    );
   };
 
   return (
@@ -143,6 +183,81 @@ export default function TaskAssignment() {
             value={formData.description}
             onChange={(e) => setFormData({...formData, description: e.target.value})}
           ></textarea>
+        </div>
+
+        {/* Customer Details Section */}
+        <div className="bg-gray-50 p-5 rounded-xl border border-gray-100 shadow-sm space-y-4">
+          <h3 className="font-semibold text-gray-800 text-lg">Customer Details (Optional)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+              <input 
+                type="text" 
+                placeholder="Name"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={formData.customer.name}
+                onChange={(e) => setFormData({...formData, customer: {...formData.customer, name: e.target.value}})}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Customer Mobile</label>
+              <input 
+                type="text" 
+                placeholder="Mobile No."
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={formData.customer.mobile}
+                onChange={(e) => setFormData({...formData, customer: {...formData.customer, mobile: e.target.value}})}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location / Address</label>
+            <div className="flex gap-2">
+              <input 
+                type="text" 
+                placeholder="Full Address"
+                className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={formData.customer.location.address}
+                onChange={(e) => setFormData({...formData, customer: {...formData.customer, location: {...formData.customer.location, address: e.target.value}}})}
+              />
+              <button 
+                type="button" 
+                onClick={handleGetLocation}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 whitespace-nowrap transition-colors text-sm font-medium shadow-sm"
+              >
+                Get Geo Location
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mt-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Latitude (Optional)</label>
+                <input 
+                  type="number" 
+                  step="any"
+                  placeholder="e.g. 28.7041"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  value={formData.customer.location.lat || ''}
+                  onChange={(e) => setFormData({...formData, customer: {...formData.customer, location: {...formData.customer.location, lat: e.target.value ? parseFloat(e.target.value) : null}}})}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Longitude (Optional)</label>
+                <input 
+                  type="number" 
+                  step="any"
+                  placeholder="e.g. 77.1025"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  value={formData.customer.location.lng || ''}
+                  onChange={(e) => setFormData({...formData, customer: {...formData.customer, location: {...formData.customer.location, lng: e.target.value ? parseFloat(e.target.value) : null}}})}
+                />
+              </div>
+            </div>
+
+            {formData.customer.location.lat && formData.customer.location.lng && (
+              <p className="text-sm text-green-600 mt-2 font-medium bg-green-50 p-2 rounded-lg inline-block">✓ Geo Location recorded: {parseFloat(formData.customer.location.lat).toFixed(4)}, {parseFloat(formData.customer.location.lng).toFixed(4)}</p>
+            )}
+          </div>
         </div>
 
         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
