@@ -41,11 +41,14 @@ export default function AttendanceViewer() {
   const [filterDate, setFilterDate] = useState(''); // Empty means all dates
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   const fetchAttendance = async () => {
     showLoader('Loading', 'Fetching attendance records...');
     try {
       const res = await api.get(`/admin/attendance?page=${page}&limit=10`);
+      console.log(res);
+      
       setAttendanceList(res.data.data);
       setTotalPages(res.data.pages);
       closeLoader();
@@ -63,6 +66,22 @@ export default function AttendanceViewer() {
   const filteredList = filterDate 
     ? attendanceList.filter(log => log.date === filterDate)
     : attendanceList;
+
+  const getFullImageUrl = (url) => {
+  
+    
+    if (!url) return '';
+    // If it's already an absolute URL or a Cloudinary URL
+    if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('//') || url.includes('cloudinary.com')) {
+      // Add https:// if it's missing protocol but is a cloudinary URL
+      if (url.includes('cloudinary.com') && !url.startsWith('http') && !url.startsWith('//')) {
+        return `https://${url}`;
+      }
+      return url;
+    }
+    const baseUrl = api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : 'http://localhost:5000';
+    return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+  };
 
   const getMapLink = (location) => {
     if (!location) return '#';
@@ -152,7 +171,7 @@ export default function AttendanceViewer() {
                   <td className="p-5">
                     <div className="flex items-center gap-3">
                       {log.staff_pic ? (
-                        <img src={log.staff_pic} alt={log.staff_name} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
+                        <img src={getFullImageUrl(log.staff_pic)} alt={log.staff_name} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold">
                           <User size={18} />
@@ -208,9 +227,9 @@ export default function AttendanceViewer() {
                       <div className="flex flex-col items-center gap-1">
                         <span className="text-[10px] font-bold uppercase text-gray-500">In</span>
                         {log.start_image_url ? (
-                          <a href={log.start_image_url} target="_blank" rel="noreferrer">
-                            <img src={log.start_image_url} alt="In Proof" className="w-12 h-12 rounded-lg object-cover border-2 border-emerald-200 hover:border-emerald-400 transition-colors cursor-pointer shadow-sm" />
-                          </a>
+                          <div onClick={() => setSelectedImage(getFullImageUrl(log.start_image_url))} className="cursor-pointer">
+                            <img src={getFullImageUrl(log.start_image_url)} alt="In Proof" className="w-12 h-12 rounded-lg object-cover border-2 border-emerald-200 hover:border-emerald-400 transition-colors shadow-sm" />
+                          </div>
                         ) : (
                           <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200">
                             <span className="text-[10px] font-medium">No Pic</span>
@@ -220,9 +239,9 @@ export default function AttendanceViewer() {
                       <div className="flex flex-col items-center gap-1">
                         <span className="text-[10px] font-bold uppercase text-gray-500">Out</span>
                         {log.image_url ? (
-                          <a href={log.image_url} target="_blank" rel="noreferrer">
-                            <img src={log.image_url} alt="Out Proof" className="w-12 h-12 rounded-lg object-cover border-2 border-rose-200 hover:border-rose-400 transition-colors cursor-pointer shadow-sm" />
-                          </a>
+                          <div onClick={() => setSelectedImage(getFullImageUrl(log.image_url))} className="cursor-pointer">
+                            <img src={getFullImageUrl(log.image_url)} alt="Out Proof" className="w-12 h-12 rounded-lg object-cover border-2 border-rose-200 hover:border-rose-400 transition-colors shadow-sm" />
+                          </div>
                         ) : (
                           <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200">
                             <span className="text-[10px] font-medium">No Pic</span>
@@ -284,6 +303,24 @@ export default function AttendanceViewer() {
           </div>
         )}
       </div>
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            <button 
+              onClick={() => setSelectedImage(null)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <img src={selectedImage} alt="Preview" className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
