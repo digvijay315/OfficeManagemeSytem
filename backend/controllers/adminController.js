@@ -194,11 +194,29 @@ const getFundsSummary = async (req, res) => {
 
         const allFunds = await Fund.find({ date: { $regex: `^${month}` }, status: 'approved' });
         const allPayments = await SalaryPayment.find({ month });
+        const allAttendances = await Attendance.find({ date: { $regex: `^${month}` } });
         const allRewardTasks = await Task.find({ 
             date: { $regex: `^${month}` }, 
             verificationStatus: 'verified', 
             rewardAmount: { $gt: 0 } 
         });
+
+        const [yearStr, monthStr] = month.split('-');
+        const year = parseInt(yearStr);
+        const monthNum = parseInt(monthStr);
+        const daysInMonth = new Date(year, monthNum, 0).getDate();
+
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1;
+        const currentDate = today.getDate();
+
+        let daysPassedInMonth = daysInMonth;
+        if (year === currentYear && monthNum === currentMonth) {
+            daysPassedInMonth = currentDate;
+        } else if (year > currentYear || (year === currentYear && monthNum > currentMonth)) {
+            daysPassedInMonth = 0;
+        }
 
         const summary = staffMembers.map(staff => {
             const staffFunds = allFunds.filter(f => f.staff_id.toString() === staff.id);
@@ -207,8 +225,22 @@ const getFundsSummary = async (req, res) => {
             const staffRewards = allRewardTasks.filter(t => t.staff_id.toString() === staff.id);
             const totalReward = staffRewards.reduce((sum, t) => sum + (t.rewardAmount || 0), 0);
 
+            // Attendance calculation
+            const staffAttendances = allAttendances.filter(a => a.staff_id && a.staff_id.toString() === staff.id);
+            const uniqueDates = new Set(staffAttendances.map(a => a.date));
+            const presentDays = uniqueDates.size;
+            
+            // Calculate absent days based on days passed in the month, not the total days
+            const absentDays = Math.max(0, daysPassedInMonth - presentDays);
+            
+            console.log(`Staff ${staff.name}: daysPassedInMonth=${daysPassedInMonth}, presentDays=${presentDays}, absentDays=${absentDays}, currentYear=${currentYear}, currentMonth=${currentMonth}, year=${year}, monthNum=${monthNum}, currentDate=${currentDate}`);
+            
             const payment = allPayments.find(p => p.staff_id.toString() === staff.id);
             const baseSalary = staff.salary || 0;
+            
+            const dailyWage = baseSalary / daysInMonth;
+            const deduction = Math.round(absentDays * dailyWage);
+            
             const effectiveSalary = baseSalary + totalReward;
             
             return {
@@ -219,7 +251,11 @@ const getFundsSummary = async (req, res) => {
                 baseSalary,
                 totalReward,
                 totalAdvance,
-                remainingSalary: effectiveSalary - totalAdvance,
+                presentDays,
+                absentDays,
+                daysInMonth,
+                deduction,
+                remainingSalary: Math.max(0, effectiveSalary - totalAdvance - deduction),
                 isPaid: !!payment,
                 paymentDetails: payment || null
             };
@@ -506,11 +542,102 @@ const getRevenueReports = async (req, res) => {
     }
 };
 
+const getStaffReport = async (req, res) => {
+    const { staff_id, month } = req.params;
+    try {
+        const staff = await User.findById(staff_id);
+        if (!staff) return res.status(404).json({ error: 'Staff not found' });
+
+        const [yearStr, monthStr] = month.split('-');
+        const year = parseInt(yearStr);
+        const monthNum = parseInt(monthStr);
+        const daysInMonth = new Date(year, monthNum, 0).getDate();
+
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1;
+        const currentDate = today.getDate();
+
+        let daysPassedInMonth = daysInMonth;
+        if (year === currentYear && monthNum === currentMonth) {
+            daysPassedInMonth = currentDate;
+        } else if (year > currentYear || (year === currentYear && monthNum > currentMonth)) {
+            daysPassedInMonth = 0;
+        }
+
+        const baseSalary = staff.salary || 0;
+        const dailyWage = baseSalary / daysInMonth;
+
+        const allAttendances = await Attendance.find({ staff_id, date: { $regex: `^${month}` } });
+        const presentDates = new Set(allAttendances.map(a => a.date));
+
+        const attendanceList = [];
+        let absentDays = 0;
+        let presentDays = 0;
+
+        for (let i = 1; i <= daysPassedInMonth; i++) {
+            const dateStr = `${yearStr}-${monthStr}-${i.toString().padStart(2, '0')}`;
+            if (presentDates.has(dateStr)) {
+                presentDays++;
+                attendanceList.push({ date: dateStr, status: 'Present', deduction: 0 });
+            } else {
+                absentDays++;
+                attendanceList.push({ date: dateStr, status: 'Absent', deduction: Math.round(dailyWage) });
+            }
+        }
+
+        const deduction = Math.round(absentDays * dailyWage);
+
+        const allFunds = await Fund.find({ staff_id, date: { $regex: `^${month}` }, status: 'approved' });
+        const advancesList = allFunds.map(f => ({ date: f.date, amount: f.amount, description: f.description }));
+        const totalAdvance = allFunds.reduce((sum, f) => sum + f.amount, 0);
+
+        const allRewardTasks = await Task.find({ 
+            staff_id, 
+            date: { $regex: `^${month}` }, 
+            verificationStatus: 'verified', 
+            rewardAmount: { $gt: 0 } 
+        });
+        const rewardsList = allRewardTasks.map(t => ({ date: t.date, amount: t.rewardAmount, description: t.title }));
+        const totalReward = allRewardTasks.reduce((sum, t) => sum + t.rewardAmount, 0);
+
+        const effectiveSalary = baseSalary + totalReward;
+        const remainingSalary = Math.max(0, effectiveSalary - totalAdvance - deduction);
+
+        const payment = await SalaryPayment.findOne({ staff_id, month });
+
+        res.json({
+            companyName: 'S. NET Digital Broadband',
+            staff: {
+                name: staff.name,
+                email: staff.email,
+                baseSalary
+            },
+            summary: {
+                daysInMonth,
+                daysPassedInMonth,
+                presentDays,
+                absentDays,
+                totalReward,
+                totalAdvance,
+                deduction,
+                remainingSalary,
+                isPaid: !!payment
+            },
+            attendanceList,
+            rewardsList,
+            advancesList
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Error generating report' });
+    }
+};
+
 module.exports = {
     getStaff, createStaff, updateStaff, deleteStaff,
     getSubadmins, createSubadmin, updateSubadmin, deleteSubadmin,
     assignTask, getGroupedTasks, recordFund, getFundsSummary, paySalary,
     getAttendance, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
     getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest,
-    verifyTask, getRevenueReports, getPendingVerificationTasks
+    verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport
 };

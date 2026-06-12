@@ -4,6 +4,9 @@
   body {
     @apply bg-gray-50 text-gray-900;
   }
+  button, [role="button"], a, select {
+    cursor: pointer;
+  }
 }
 
 @layer utilities {

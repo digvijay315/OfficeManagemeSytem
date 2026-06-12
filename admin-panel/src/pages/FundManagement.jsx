@@ -3,6 +3,7 @@ import api from '../api';
 import { showAlert, showLoader, closeLoader, showConfirm } from '../utils/swalUtils';
 import { Wallet, IndianRupee, Calendar, CheckCircle, HandCoins, User, Clock, Check, X, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import Swal from 'sweetalert2';
+import SalaryReportModal from '../components/SalaryReportModal';
 
 export default function FundManagement() {
   const [activeTab, setActiveTab] = useState('salary'); // 'salary', 'requests', 'history'
@@ -10,6 +11,9 @@ export default function FundManagement() {
   // Salary Tab State
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [summaryData, setSummaryData] = useState([]);
+  const [processing, setProcessing] = useState(false);
+  const [reportData, setReportData] = useState(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Requests Tab State
   const [requests, setRequests] = useState([]);
@@ -73,7 +77,16 @@ export default function FundManagement() {
     if (activeTab === 'history') fetchHistory();
   }, [activeTab, selectedMonth, historyPage, historyMonth, selectedStaff]);
 
-
+  const handleGenerateReport = async (staffId) => {
+    try {
+      const res = await api.get(`/admin/funds/report/${staffId}/${selectedMonth}`);
+      setReportData(res.data);
+      setIsReportModalOpen(true);
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Error', 'Failed to generate report', 'error');
+    }
+  };
 
   const handlePaySalary = async (staff_id, remainingSalary) => {
     const { value: file } = await Swal.fire({
@@ -98,6 +111,7 @@ export default function FundManagement() {
     });
 
     if (file || file === null) {
+      setProcessing(true);
       showLoader('Processing', 'Recording salary payment...');
       try {
         let slipUrl = '';
@@ -125,6 +139,8 @@ export default function FundManagement() {
       } catch (err) {
         closeLoader();
         showAlert('Error', 'Failed to process payment', 'error');
+      } finally {
+        setProcessing(false);
       }
     }
   };
@@ -256,6 +272,9 @@ export default function FundManagement() {
                 <tr className="bg-gray-50 text-gray-600 text-sm tracking-wider uppercase">
                   <th className="p-5 font-semibold border-b border-gray-200">Staff</th>
                   <th className="p-5 font-semibold border-b border-gray-200 text-right">Base Salary</th>
+                  <th className="p-5 font-semibold border-b border-gray-200 text-right">Reward</th>
+                  <th className="p-5 font-semibold border-b border-gray-200 text-center">Attendance</th>
+                  <th className="p-5 font-semibold border-b border-gray-200 text-right">Deduction</th>
                   <th className="p-5 font-semibold border-b border-gray-200 text-right">Total Advance</th>
                   <th className="p-5 font-semibold border-b border-gray-200 text-right">Remaining</th>
                   <th className="p-5 font-semibold border-b border-gray-200 text-center">Status</th>
@@ -281,6 +300,12 @@ export default function FundManagement() {
                       </div>
                     </td>
                     <td className="p-5 text-right font-medium text-gray-600">₹{data.baseSalary}</td>
+                    <td className="p-5 text-right font-medium text-emerald-600">+ ₹{data.totalReward || 0}</td>
+                    <td className="p-5 text-center font-medium text-gray-600">
+                      <span className="text-emerald-600 font-bold" title="Present Days">{data.presentDays || 0}</span> / <span className="text-red-500 font-bold" title="Absent Days">{data.absentDays || 0}</span>
+                      <div className="text-[10px] text-gray-400">{data.daysInMonth || 30} Days</div>
+                    </td>
+                    <td className="p-5 text-right font-medium text-red-500">- ₹{data.deduction || 0}</td>
                     <td className="p-5 text-right font-medium text-red-500">- ₹{data.totalAdvance}</td>
                     <td className="p-5 text-right font-bold text-gray-800 text-lg">₹{data.remainingSalary}</td>
                     <td className="p-5 text-center">
@@ -295,24 +320,31 @@ export default function FundManagement() {
                       )}
                     </td>
                     <td className="p-5 text-center">
-                      {!data.isPaid ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <button 
+                      <div className="flex justify-center gap-2">
+                        <button
+                          onClick={() => handleGenerateReport(data.staff_id)}
+                          className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition shadow-sm text-sm"
+                        >
+                          Report
+                        </button>
+                        {!data.isPaid ? (
+                          <button
                             onClick={() => handlePaySalary(data.staff_id, data.remainingSalary)}
-                            className="flex items-center gap-1 bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors shadow-sm shadow-emerald-200 cursor-pointer"
+                            disabled={processing}
+                            className={`bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm text-sm ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
-                            <IndianRupee size={16} /> Pay
+                            Pay
                           </button>
-                        </div>
-                      ) : (
-                        <span className="text-sm font-medium text-gray-400 italic">Settled</span>
-                      )}
+                        ) : (
+                          <span className="text-sm font-medium text-gray-400 bg-gray-100 px-3 py-2 rounded-lg">Paid</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
                 {summaryData.length === 0 && (
                   <tr>
-                    <td colSpan="6" className="p-8 text-center text-gray-500">No staff records found.</td>
+                    <td colSpan="9" className="p-8 text-center text-gray-500">No staff records found.</td>
                   </tr>
                 )}
               </tbody>
@@ -493,6 +525,13 @@ export default function FundManagement() {
         </div>
       )}
 
+      {isReportModalOpen && reportData && (
+        <SalaryReportModal
+          reportData={reportData}
+          month={selectedMonth}
+          onClose={() => setIsReportModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
