@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import { AlertCircle, CheckCircle, Clock, ChevronDown, ChevronUp, AlertTriangle, User, Calendar } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, ChevronDown, ChevronUp, AlertTriangle, User, Calendar, Edit, Trash2, X } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 export default function TaskViewer() {
   const [groupedTasks, setGroupedTasks] = useState([]);
@@ -11,6 +12,9 @@ export default function TaskViewer() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  
+  const [editingTask, setEditingTask] = useState(null);
+  const [editFormData, setEditFormData] = useState(null);
   
   const [selectedStaff, setSelectedStaff] = useState('');
   const getTodayStr = () => new Date().toISOString().split('T')[0];
@@ -54,6 +58,63 @@ export default function TaskViewer() {
   useEffect(() => {
     fetchGroupedTasks(page);
   }, [page, selectedStaff, dateFilter]);
+
+  const handleDeleteTask = async (taskId) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You want to delete this pending task?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#9ca3af',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/admin/tasks/${taskId}`);
+        Swal.fire('Deleted!', 'Task has been deleted.', 'success');
+        fetchGroupedTasks(page);
+      } catch (err) {
+        Swal.fire('Error', 'Failed to delete task', 'error');
+      }
+    }
+  };
+
+  const handleEditTask = (task) => {
+    setEditingTask(task);
+    setEditFormData({
+      title: task.title || '',
+      description: task.description || '',
+      date: task.date || '',
+      type: task.type || 'regular',
+      customer: {
+        name: task.customer?.name || '',
+        mobile: task.customer?.mobile || '',
+        location: {
+          address: task.customer?.location?.address || '',
+          lat: task.customer?.location?.lat || '',
+          lng: task.customer?.location?.lng || ''
+        }
+      }
+    });
+  };
+
+  const submitEditTask = async (e) => {
+    e.preventDefault();
+    if (!editFormData.title.trim()) {
+      Swal.fire('Error', 'Title is required', 'error');
+      return;
+    }
+    try {
+      await api.put(`/admin/tasks/${editingTask._id}`, editFormData);
+      Swal.fire('Updated!', 'Task has been updated.', 'success');
+      setEditingTask(null);
+      fetchGroupedTasks(page);
+    } catch (err) {
+      Swal.fire('Error', 'Failed to update task', 'error');
+    }
+  };
 
   const toggleRow = (groupId) => {
     setExpandedRows(prev => ({ ...prev, [groupId]: !prev[groupId] }));
@@ -237,8 +298,12 @@ export default function TaskViewer() {
                                                 <p className="text-gray-600 text-sm mb-4">{task.description}</p>
                                                 
                                                 {task.status !== 'completed' ? (
-                                                    <div className="mt-4 pt-3 border-t border-gray-100">
+                                                    <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
                                                         <p className="text-sm text-amber-600 flex items-center gap-1 font-semibold"><Clock size={14}/> Pending</p>
+                                                        <div className="flex gap-2">
+                                                            <button onClick={() => handleEditTask(task)} title="Edit Task" className="text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-md transition-colors"><Edit size={16}/></button>
+                                                            <button onClick={() => handleDeleteTask(task._id)} title="Delete Task" className="text-red-500 hover:text-red-700 bg-red-50 p-1.5 rounded-md transition-colors"><Trash2 size={16}/></button>
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     <div className="mt-4 pt-3 border-t border-gray-100">
@@ -331,6 +396,149 @@ export default function TaskViewer() {
             </div>
         )}
       </div>
+
+      {/* Edit Task Modal */}
+      {editingTask && editFormData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="sticky top-0 bg-white border-b border-gray-100 p-6 flex justify-between items-center z-10">
+              <h3 className="text-xl font-bold text-gray-800">Edit Task</h3>
+              <button onClick={() => setEditingTask(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+            <form onSubmit={submitEditTask} className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Task Title</label>
+                  <input 
+                    type="text" 
+                    required
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    value={editFormData.title}
+                    onChange={(e) => setEditFormData({...editFormData, title: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Task Date</label>
+                  <input 
+                    type="date" 
+                    required
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    value={editFormData.date}
+                    onChange={(e) => setEditFormData({...editFormData, date: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Detailed Description</label>
+                <textarea 
+                  rows="3"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  value={editFormData.description}
+                  onChange={(e) => setEditFormData({...editFormData, description: e.target.value})}
+                ></textarea>
+              </div>
+
+              <div className="bg-gray-50 p-5 rounded-xl border border-gray-100 shadow-sm space-y-4">
+                <h4 className="font-semibold text-gray-800 text-md">Customer Details (Optional)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                    <input 
+                      type="text" 
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                      value={editFormData.customer.name}
+                      onChange={(e) => setEditFormData({...editFormData, customer: {...editFormData.customer, name: e.target.value}})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Customer Mobile</label>
+                    <input 
+                      type="text" 
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                      value={editFormData.customer.mobile}
+                      onChange={(e) => setEditFormData({...editFormData, customer: {...editFormData.customer, mobile: e.target.value}})}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location / Address</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none mb-3"
+                    value={editFormData.customer.location.address}
+                    onChange={(e) => setEditFormData({...editFormData, customer: {...editFormData.customer, location: {...editFormData.customer.location, address: e.target.value}}})}
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Latitude</label>
+                      <input 
+                        type="number" step="any"
+                        className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                        value={editFormData.customer.location.lat}
+                        onChange={(e) => setEditFormData({...editFormData, customer: {...editFormData.customer, location: {...editFormData.customer.location, lat: e.target.value}}})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Longitude</label>
+                      <input 
+                        type="number" step="any"
+                        className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                        value={editFormData.customer.location.lng}
+                        onChange={(e) => setEditFormData({...editFormData, customer: {...editFormData.customer, location: {...editFormData.customer.location, lng: e.target.value}}})}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <label className="block text-sm font-medium text-gray-700 mb-3">Task Priority / Type</label>
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="radio" name="edit_type" value="regular"
+                      checked={editFormData.type === 'regular'}
+                      onChange={(e) => setEditFormData({...editFormData, type: e.target.value})}
+                      className="w-4 h-4 text-indigo-600"
+                    />
+                    <span className="text-gray-700">Regular Task</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="radio" name="edit_type" value="emergency"
+                      checked={editFormData.type === 'emergency'}
+                      onChange={(e) => setEditFormData({...editFormData, type: e.target.value})}
+                      className="w-4 h-4 text-red-600"
+                    />
+                    <span className="text-red-600 font-medium">Emergency Task</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="radio" name="edit_type" value="additional"
+                      checked={editFormData.type === 'additional'}
+                      onChange={(e) => setEditFormData({...editFormData, type: e.target.value})}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <span className="text-blue-600 font-medium">Additional Task</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => setEditingTask(null)} className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium">
+                  Cancel
+                </button>
+                <button type="submit" className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm">
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

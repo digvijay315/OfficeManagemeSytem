@@ -170,6 +170,26 @@ const assignTask = async (req, res) => {
     }
 };
 
+const updateTask = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const task = await Task.findByIdAndUpdate(id, req.body, { new: true });
+        res.json(task);
+    } catch (err) {
+        res.status(400).json({ error: 'Error updating task' });
+    }
+};
+
+const deleteTask = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Task.findByIdAndDelete(id);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(400).json({ error: 'Error deleting task' });
+    }
+};
+
 const recordFund = async (req, res) => {
     const { staff_id, amount, date, description } = req.body;
     try {
@@ -639,5 +659,5 @@ module.exports = {
     assignTask, getGroupedTasks, recordFund, getFundsSummary, paySalary,
     getAttendance, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
     getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest,
-    verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport
+    verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport, updateTask, deleteTask
 };

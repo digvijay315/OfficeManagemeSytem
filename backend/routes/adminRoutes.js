@@ -7,7 +7,7 @@ const {
     assignTask, getGroupedTasks, recordFund, getFundsSummary, paySalary,
     getAttendance, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
     getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest,
-    verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport
+    verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport, updateTask, deleteTask
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -34,6 +34,8 @@ router.get('/tasks/pending-verification', getPendingVerificationTasks);
 router.post('/tasks', assignTask);
 router.get('/tasks/grouped', getGroupedTasks);
 router.put('/tasks/:id/verify', verifyTask);
+router.put('/tasks/:id', updateTask);
+router.delete('/tasks/:id', deleteTask);
 
 router.post('/funds', recordFund);
 router.get('/funds/summary/:month', getFundsSummary);
