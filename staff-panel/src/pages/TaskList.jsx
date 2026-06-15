@@ -313,7 +313,7 @@ export default function TaskList() {
 
       await api.post('/staff/tasks', { ...newTask, date: new Date().toISOString().split('T')[0], type: 'additional', images: imageUrls });
       
-      Swal.fire({
+      await Swal.fire({
         icon: 'success',
         title: 'Task Logged!',
         text: 'Your additional task has been successfully logged.',
