@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../api';
 import Swal from 'sweetalert2';
-import { PlusCircle, ClipboardList, CheckCircle, Clock, User, UserPlus, FileImage, X } from 'lucide-react';
+import { PlusCircle, ClipboardList, CheckCircle, Clock, User, UserPlus, FileImage, X, Edit, Trash2 } from 'lucide-react';
 
 export default function Leads() {
     const [leads, setLeads] = useState([]);
@@ -9,6 +9,7 @@ export default function Leads() {
     const [loading, setLoading] = useState(true);
 
     const [showForm, setShowForm] = useState(false);
+    const [editLeadId, setEditLeadId] = useState(null);
     const [formData, setFormData] = useState({
         leadType: 'Services',
         location: '',
@@ -78,18 +79,24 @@ export default function Leads() {
         setPhotoUrl('');
     };
 
-    const handleCreateLead = async (e) => {
+    const handleSubmitLead = async (e) => {
         e.preventDefault();
 
-        const newLead = {
+        const leadPayload = {
             ...formData,
             photo: photoUrl
         };
 
         try {
-            await api.post('/admin/leads', newLead);
-            await Swal.fire('Success', 'Lead created successfully', 'success');
+            if (editLeadId) {
+                await api.put(`/admin/leads/${editLeadId}`, leadPayload);
+                await Swal.fire('Success', 'Lead updated successfully', 'success');
+            } else {
+                await api.post('/admin/leads', leadPayload);
+                await Swal.fire('Success', 'Lead created successfully', 'success');
+            }
             setShowForm(false);
+            setEditLeadId(null);
             setFormData({
                 leadType: 'Services',
                 location: '',
@@ -100,7 +107,43 @@ export default function Leads() {
             setPhotoUrl('');
             fetchLeads(page);
         } catch (err) {
-            Swal.fire('Error', 'Failed to create lead', 'error');
+            Swal.fire('Error', editLeadId ? 'Failed to update lead' : 'Failed to create lead', 'error');
+        }
+    };
+
+    const handleEditClick = (lead) => {
+        setEditLeadId(lead._id);
+        setFormData({
+            leadType: lead.leadType || 'Services',
+            location: lead.location || '',
+            customerName: lead.customerName || '',
+            customerMobile: lead.customerMobile || '',
+            description: lead.description || '',
+        });
+        setPhotoUrl(lead.photo || '');
+        setShowForm(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDeleteLead = async (id) => {
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, delete it!'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await api.delete(`/admin/leads/${id}`);
+                await Swal.fire('Deleted!', 'Lead has been deleted.', 'success');
+                fetchLeads(page);
+            } catch (err) {
+                Swal.fire('Error', 'Failed to delete lead', 'error');
+            }
         }
     };
 
@@ -126,17 +169,32 @@ export default function Leads() {
                     <p className="text-gray-500 text-sm mt-1">Manage leads and assign them to staff members.</p>
                 </div>
                 <button 
-                    onClick={() => setShowForm(!showForm)}
+                    onClick={() => {
+                        if (showForm) {
+                            setShowForm(false);
+                            setEditLeadId(null);
+                            setFormData({
+                                leadType: 'Services',
+                                location: '',
+                                customerName: '',
+                                customerMobile: '',
+                                description: '',
+                            });
+                            setPhotoUrl('');
+                        } else {
+                            setShowForm(true);
+                        }
+                    }}
                     className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
                 >
-                    <PlusCircle size={20} /> Add New Lead
+                    <PlusCircle size={20} /> {showForm ? 'Cancel' : 'Add New Lead'}
                 </button>
             </div>
 
             {showForm && (
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4">Add New Lead</h3>
-                    <form onSubmit={handleCreateLead} className="space-y-4">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">{editLeadId ? 'Edit Lead' : 'Add New Lead'}</h3>
+                    <form onSubmit={handleSubmitLead} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Lead Type</label>
@@ -215,8 +273,19 @@ export default function Leads() {
                             </div>
                         </div>
                         <div className="flex justify-end pt-4 border-t">
-                            <button type="button" onClick={() => setShowForm(false)} className="px-6 py-2 mr-3 border rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
-                            <button type="submit" className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save Lead</button>
+                            <button type="button" onClick={() => {
+                                setShowForm(false);
+                                setEditLeadId(null);
+                                setFormData({
+                                    leadType: 'Services',
+                                    location: '',
+                                    customerName: '',
+                                    customerMobile: '',
+                                    description: '',
+                                });
+                                setPhotoUrl('');
+                            }} className="px-6 py-2 mr-3 border rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+                            <button type="submit" className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">{editLeadId ? 'Update Lead' : 'Save Lead'}</button>
                         </div>
                     </form>
                 </div>
@@ -261,32 +330,44 @@ export default function Leads() {
                                             {lead.status === 'completed' && <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold flex w-fit items-center gap-1"><CheckCircle size={12}/> Completed</span>}
                                         </td>
                                         <td className="px-6 py-4">
-                                            {lead.status === 'pending' ? (
-                                                <select 
-                                                    className="w-full max-w-[180px] px-3 py-1.5 border rounded-lg text-sm bg-white outline-none focus:ring-1 focus:ring-indigo-500"
-                                                    onChange={(e) => handleAssign(lead._id, e.target.value)}
-                                                    defaultValue=""
-                                                >
-                                                    <option value="" disabled>Assign To...</option>
-                                                    {staffList.map(staff => (
-                                                        <option key={staff._id || staff.id} value={staff._id || staff.id}>{staff.name}</option>
-                                                    ))}
-                                                </select>
-                                            ) : (
-                                                <div>
-                                                    {lead.assignedTo ? (
-                                                        <div className="text-sm">
-                                                            <span className="text-gray-500">Assigned: </span>
-                                                            <span className="font-semibold">{lead.assignedTo.name}</span>
-                                                        </div>
-                                                    ) : '-'}
-                                                    {lead.status === 'completed' && lead.completedBy && (
-                                                        <div className="text-sm mt-1">
-                                                            <span className="text-emerald-600 font-medium text-xs">Done by: {lead.completedBy.name}</span>
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div className="flex-1">
+                                                    {lead.status === 'pending' ? (
+                                                        <select 
+                                                            className="w-full max-w-[180px] px-3 py-1.5 border rounded-lg text-sm bg-white outline-none focus:ring-1 focus:ring-indigo-500"
+                                                            onChange={(e) => handleAssign(lead._id, e.target.value)}
+                                                            defaultValue=""
+                                                        >
+                                                            <option value="" disabled>Assign To...</option>
+                                                            {staffList.map(staff => (
+                                                                <option key={staff._id || staff.id} value={staff._id || staff.id}>{staff.name}</option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <div>
+                                                            {lead.assignedTo ? (
+                                                                <div className="text-sm">
+                                                                    <span className="text-gray-500">Assigned: </span>
+                                                                    <span className="font-semibold">{lead.assignedTo.name}</span>
+                                                                </div>
+                                                            ) : '-'}
+                                                            {lead.status === 'completed' && lead.completedBy && (
+                                                                <div className="text-sm mt-1">
+                                                                    <span className="text-emerald-600 font-medium text-xs">Done by: {lead.completedBy.name}</span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
-                                            )}
+                                                <div className="flex items-center gap-2">
+                                                    <button onClick={() => handleEditClick(lead)} className="p-1.5 text-blue-600 bg-blue-50 rounded hover:bg-blue-100 transition-colors" title="Edit Lead">
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button onClick={() => handleDeleteLead(lead._id)} className="p-1.5 text-red-600 bg-red-50 rounded hover:bg-red-100 transition-colors" title="Delete Lead">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))

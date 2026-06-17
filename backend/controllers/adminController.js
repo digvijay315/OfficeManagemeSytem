@@ -717,6 +717,24 @@ const assignLead = async (req, res) => {
     }
 };
 
+const updateLead = async (req, res) => {
+    try {
+        const lead = await Lead.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json(lead);
+    } catch (err) {
+        res.status(400).json({ error: 'Error updating lead' });
+    }
+};
+
+const deleteLead = async (req, res) => {
+    try {
+        await Lead.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(400).json({ error: 'Error deleting lead' });
+    }
+};
+
 module.exports = {
     getStaff, createStaff, updateStaff, deleteStaff,
     getSubadmins, createSubadmin, updateSubadmin, deleteSubadmin,
@@ -724,5 +742,5 @@ module.exports = {
     getAttendance, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
     getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest,
     verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport, updateTask, deleteTask,
-    getLeads, createLead, assignLead
+    getLeads, createLead, assignLead, updateLead, deleteLead
 };
