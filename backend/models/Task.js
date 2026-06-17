@@ -23,7 +23,8 @@ const taskSchema = new mongoose.Schema({
             lat: Number,
             lng: Number
         }
-    }
+    },
+    leadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead' }
 }, {
     toJSON: { virtuals: true },
     toObject: { virtuals: true }

@@ -11,6 +11,7 @@ import TaskViewer from './pages/TaskViewer';
 import TaskVerification from './pages/TaskVerification';
 import RevenueReports from './pages/RevenueReports';
 import SubadminManagement from './pages/SubadminManagement';
+import Leads from './pages/Leads';
 
 function App() {
   const isAuthenticated = !!localStorage.getItem('token');
@@ -25,6 +26,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="subadmins" element={<SubadminManagement />} />
             <Route path="staff" element={<StaffManagement />} />
+            <Route path="leads" element={<Leads />} />
             <Route path="custom-tasks" element={<CustomTasks />} />
             <Route path="tasks" element={<TaskAssignment />} />
             <Route path="tasks-view" element={<TaskViewer />} />

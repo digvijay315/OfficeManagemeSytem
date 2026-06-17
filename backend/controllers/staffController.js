@@ -3,6 +3,7 @@ const Fund = require('../models/Fund');
 const SalaryPayment = require('../models/SalaryPayment');
 const Attendance = require('../models/Attendance');
 const User = require('../models/User');
+const Lead = require('../models/Lead');
 
 const mongoose = require('mongoose');
 const { getPagination } = require('../utils/pagination');
@@ -31,14 +32,28 @@ const getGroupedTasks = async (req, res) => {
 
 const updateTask = async (req, res) => {
     const { status, comment, images, paymentAmount, paymentMode, paymentSlipUrls } = req.body;
-    await Task.findOneAndUpdate({ _id: req.params.id, staff_id: req.user._id }, { 
+    
+    const taskDoc = await Task.findOne({ _id: req.params.id, staff_id: req.user._id });
+    if (!taskDoc) return res.status(404).json({ error: 'Task not found' });
+    
+    const mergedImages = [...(taskDoc.images || []), ...(images || [])];
+    
+    const task = await Task.findOneAndUpdate({ _id: req.params.id, staff_id: req.user._id }, { 
         status, 
         comment, 
-        images,
+        images: mergedImages,
         paymentAmount: paymentAmount || 0,
         paymentMode: paymentMode || 'none',
         paymentSlipUrls
-    });
+    }, { new: true });
+
+    if (task && task.leadId && status === 'completed') {
+        await Lead.findByIdAndUpdate(task.leadId, {
+            status: 'completed',
+            completedBy: req.user._id
+        });
+    }
+
     res.json({ success: true });
 };
 

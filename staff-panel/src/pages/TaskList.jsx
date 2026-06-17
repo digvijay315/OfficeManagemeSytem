@@ -27,6 +27,19 @@ const TaskCard = ({ task, onComplete }) => {
       </div>
       <p className="text-gray-600 text-sm mb-4">{task.description}</p>
       
+      {task.images && task.images.length > 0 && task.status !== 'completed' && (
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+          <h6 className="font-semibold text-gray-700 text-sm mb-2">Attached Images</h6>
+          <div className="flex flex-wrap gap-2">
+            {task.images.map((img, i) => (
+              <a key={i} href={img} target="_blank" rel="noreferrer" className="block relative w-16 h-16 rounded-md overflow-hidden border border-gray-200 hover:border-blue-400 transition-colors">
+                <img src={img} alt="Task attachment" className="w-full h-full object-cover" />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       {task.customer && (task.customer.name || task.customer.mobile || task.customer.location?.address || task.customer.location?.lat) && (
         <div className="mb-4 p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-sm">
           <h6 className="font-semibold text-blue-800 mb-1.5">Customer Info</h6>
@@ -283,7 +296,7 @@ export default function TaskList() {
           paymentSlipUrls
       });
       
-      Swal.fire({
+      await Swal.fire({
         icon: 'success',
         title: 'Task Completed!',
         text: 'Your task has been successfully marked as completed.',

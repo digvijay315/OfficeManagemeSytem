@@ -4,6 +4,7 @@ const Fund = require('../models/Fund');
 const SalaryPayment = require('../models/SalaryPayment');
 const Attendance = require('../models/Attendance');
 const PredefinedTask = require('../models/PredefinedTask');
+const Lead = require('../models/Lead');
 const { staffSchema, subadminSchema } = require('../validations/staffValidation');
 const mongoose = require('mongoose');
 const { getPagination } = require('../utils/pagination');
@@ -653,11 +654,75 @@ const getStaffReport = async (req, res) => {
     }
 };
 
+const getLeads = async (req, res) => {
+    const { page, limit, skip } = getPagination(req);
+    try {
+        const total = await Lead.countDocuments();
+        const leads = await Lead.find()
+            .populate('assignedTo completedBy', 'name email')
+            .sort({ _id: -1 })
+            .skip(skip)
+            .limit(limit);
+        res.json({ data: leads, total, page, pages: Math.ceil(total / limit) });
+    } catch (err) {
+        res.status(500).json({ error: 'Error fetching leads' });
+    }
+};
+
+const createLead = async (req, res) => {
+    try {
+        const lead = await Lead.create(req.body);
+        res.json(lead);
+    } catch (err) {
+        res.status(400).json({ error: 'Error creating lead' });
+    }
+};
+
+const assignLead = async (req, res) => {
+    const { id } = req.params;
+    const { staff_id } = req.body;
+    try {
+        const lead = await Lead.findById(id);
+        if (!lead) return res.status(404).json({ error: 'Lead not found' });
+        
+        const task = await Task.create({ 
+            staff_id, 
+            title: `${lead.leadType} Lead`, 
+            description: lead.description, 
+            date: new Date().toISOString().split('T')[0], 
+            type: 'lead', 
+            customer: {
+                name: lead.customerName,
+                mobile: lead.customerMobile,
+                location: { address: lead.location }
+            },
+            images: lead.photo ? [lead.photo] : [],
+            leadId: lead._id
+        });
+
+        lead.status = 'assigned';
+        lead.assignedTo = staff_id;
+        lead.taskId = task._id;
+        await lead.save();
+
+        sendToUser(staff_id, 'new_task', {
+            id: task._id,
+            title: task.title,
+            message: `New lead assigned: ${task.title}`
+        });
+
+        res.json(lead);
+    } catch (error) {
+        res.status(400).json({ error: 'Error assigning lead' });
+    }
+};
+
 module.exports = {
     getStaff, createStaff, updateStaff, deleteStaff,
     getSubadmins, createSubadmin, updateSubadmin, deleteSubadmin,
     assignTask, getGroupedTasks, recordFund, getFundsSummary, paySalary,
     getAttendance, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
     getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest,
-    verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport, updateTask, deleteTask
+    verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport, updateTask, deleteTask,
+    getLeads, createLead, assignLead
 };

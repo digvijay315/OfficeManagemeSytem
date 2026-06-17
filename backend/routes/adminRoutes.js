@@ -7,7 +7,8 @@ const {
     assignTask, getGroupedTasks, recordFund, getFundsSummary, paySalary,
     getAttendance, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
     getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest,
-    verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport, updateTask, deleteTask
+    verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport, updateTask, deleteTask,
+    getLeads, createLead, assignLead
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -53,5 +54,9 @@ router.get('/attendance', getAttendance);
 router.get('/predefined-tasks', getPredefinedTasks);
 router.post('/predefined-tasks', createPredefinedTask);
 router.delete('/predefined-tasks/:id', deletePredefinedTask);
+
+router.get('/leads', getLeads);
+router.post('/leads', createLead);
+router.post('/leads/:id/assign', assignLead);
 
 module.exports = router;

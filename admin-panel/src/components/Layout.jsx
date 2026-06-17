@@ -104,6 +104,7 @@ export default function Layout() {
     { path: '/dashboard', name: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { path: '/subadmins', name: 'Manage Subadmin', icon: <Shield size={20} /> },
     { path: '/staff', name: 'Manage Staff', icon: <Users size={20} /> },
+    { path: '/leads', name: 'Leads', icon: <ClipboardList size={20} /> },
     { path: '/custom-tasks', name: 'Task Library', icon: <ListPlus size={20} /> },
     { path: '/tasks', name: 'Assign Tasks', icon: <ClipboardList size={20} /> },
     { path: '/tasks-view', name: 'View Tasks', icon: <CheckSquare size={20} /> },
