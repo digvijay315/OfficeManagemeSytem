@@ -5,6 +5,8 @@ const SalaryPayment = require('../models/SalaryPayment');
 const Attendance = require('../models/Attendance');
 const PredefinedTask = require('../models/PredefinedTask');
 const Lead = require('../models/Lead');
+const Income = require('../models/Income');
+const Expense = require('../models/Expense');
 const { staffSchema, subadminSchema } = require('../validations/staffValidation');
 const mongoose = require('mongoose');
 const { getPagination } = require('../utils/pagination');
@@ -300,8 +302,20 @@ const paySalary = async (req, res) => {
 
 const getAttendance = async (req, res) => {
     const { page, limit, skip } = getPagination(req);
-    const total = await Attendance.countDocuments();
-    const attendances = await Attendance.find().populate('staff_id', 'name email Upload').sort({ date: -1 }).skip(skip).limit(limit);
+    const { fromDate, toDate, staff_id } = req.query;
+
+    let query = {};
+    if (fromDate || toDate) {
+        query.date = {};
+        if (fromDate) query.date.$gte = fromDate;
+        if (toDate) query.date.$lte = toDate;
+    }
+    if (staff_id) {
+        query.staff_id = new mongoose.Types.ObjectId(staff_id);
+    }
+
+    const total = await Attendance.countDocuments(query);
+    const attendances = await Attendance.find(query).populate('staff_id', 'name email Upload').sort({ date: -1 }).skip(skip).limit(limit);
     
     // Transform to match previous structure where staff_name is top level
     const transformed = attendances.map(a => ({
@@ -553,9 +567,23 @@ const getRevenueReports = async (req, res) => {
             }
         });
 
+        // Fetch Income sum
+        let incomeQuery = { status: 'success' };
+        if (month) incomeQuery.date = { $regex: `^${month}` };
+        const incomes = await Income.find(incomeQuery);
+        const totalIncomeFromRecords = incomes.reduce((sum, inc) => sum + (inc.amount || 0), 0);
+
+        // Fetch Expense sum
+        let expenseQuery = {};
+        if (month) expenseQuery.date = { $regex: `^${month}` };
+        const expenses = await Expense.find(expenseQuery);
+        const totalExpenseFromRecords = expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
+
         res.json({
             totalRevenueThisMonth,
             totalRewardsThisMonth,
+            totalIncomeFromRecords,
+            totalExpenseFromRecords,
             staffData: Object.values(staffMap).sort((a, b) => b.revenue - a.revenue)
         });
     } catch (err) {
@@ -735,6 +763,82 @@ const deleteLead = async (req, res) => {
     }
 };
 
+const getIncomes = async (req, res) => {
+    const { page, limit, skip } = getPagination(req);
+    try {
+        const total = await Income.countDocuments();
+        const incomes = await Income.find().sort({ _id: -1 }).skip(skip).limit(limit);
+        res.json({ data: incomes, total, page, pages: Math.ceil(total / limit) });
+    } catch (err) {
+        res.status(500).json({ error: 'Error fetching incomes' });
+    }
+};
+
+const getPendingIncomeCount = async (req, res) => {
+    try {
+        const count = await Income.countDocuments({ status: 'pending' });
+        res.json({ count });
+    } catch (err) {
+        res.status(500).json({ error: 'Error fetching pending income count' });
+    }
+};
+
+const createIncome = async (req, res) => {
+    try {
+        const income = await Income.create(req.body);
+        res.json(income);
+    } catch (err) {
+        res.status(400).json({ error: 'Error creating income' });
+    }
+};
+
+const updateIncome = async (req, res) => {
+    try {
+        const income = await Income.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json(income);
+    } catch (err) {
+        res.status(400).json({ error: 'Error updating income' });
+    }
+};
+
+const deleteIncome = async (req, res) => {
+    try {
+        await Income.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(400).json({ error: 'Error deleting income' });
+    }
+};
+
+const getExpenses = async (req, res) => {
+    const { page, limit, skip } = getPagination(req);
+    try {
+        const total = await Expense.countDocuments();
+        const expenses = await Expense.find().populate('staff_id', 'name email').sort({ _id: -1 }).skip(skip).limit(limit);
+        res.json({ data: expenses, total, page, pages: Math.ceil(total / limit) });
+    } catch (err) {
+        res.status(500).json({ error: 'Error fetching expenses' });
+    }
+};
+
+const createExpense = async (req, res) => {
+    try {
+        const expense = await Expense.create(req.body);
+        res.json(expense);
+    } catch (err) {
+        res.status(400).json({ error: 'Error creating expense' });
+    }
+};
+
+const deleteExpense = async (req, res) => {
+    try {
+        await Expense.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(400).json({ error: 'Error deleting expense' });
+    }
+};
+
 module.exports = {
     getStaff, createStaff, updateStaff, deleteStaff,
     getSubadmins, createSubadmin, updateSubadmin, deleteSubadmin,
@@ -742,5 +846,7 @@ module.exports = {
     getAttendance, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
     getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest,
     verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport, updateTask, deleteTask,
-    getLeads, createLead, assignLead, updateLead, deleteLead
+    getLeads, createLead, assignLead, updateLead, deleteLead,
+    getIncomes, getPendingIncomeCount, createIncome, updateIncome, deleteIncome,
+    getExpenses, createExpense, deleteExpense
 };

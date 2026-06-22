@@ -39,7 +39,7 @@ export default function Layout() {
 
       // Only show fund-related notifications to 'admin'
       if (userRole === 'admin') {
-        // 1. Fetch pending requests on mount
+        // 1. Fetch pending requests and incomes on mount
         import('../api').then(({ default: api }) => {
           api.get('/admin/funds/requests').then(res => {
             if (res.data && res.data.length > 0) {
@@ -57,6 +57,23 @@ export default function Layout() {
               });
             }
           }).catch(err => console.error("Error fetching pending requests", err));
+
+          api.get('/admin/incomes/pending-count').then(res => {
+            if (res.data && res.data.count > 0) {
+              import('sweetalert2').then(({ default: Swal }) => {
+                setTimeout(() => {
+                  Swal.fire({
+                    title: 'Pending Incomes!',
+                    text: `You have ${res.data.count} pending payments to verify.`,
+                    icon: 'info',
+                    confirmButtonText: 'Check Now',
+                    confirmButtonColor: '#10b981'
+                  });
+                  new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(e => console.error("Audio error:", e));
+                }, 3000);
+              });
+            }
+          }).catch(err => console.error("Error fetching pending incomes", err));
         });
 
         // 2. Setup SSE connection

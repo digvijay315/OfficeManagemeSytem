@@ -42,30 +42,56 @@ export default function RevenueReports() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
           <div className="relative z-10">
-            <p className="text-emerald-100 font-medium mb-1">Total Revenue ({month ? format(new Date(month + '-01'), 'MMMM yyyy') : 'All Time'})</p>
-            <h3 className="text-4xl font-bold flex items-center gap-2">
-              <IndianRupee size={32} /> {data.totalRevenueThisMonth || 0}
+            <p className="text-emerald-100 font-medium mb-1">Total Revenue</p>
+            <h3 className="text-3xl font-bold flex items-center gap-2">
+              <IndianRupee size={28} /> {data.totalRevenueThisMonth || 0}
             </h3>
-            <p className="text-sm mt-4 text-emerald-50 bg-white/20 inline-block px-3 py-1 rounded-full">For {month ? format(new Date(month + '-01'), 'MMMM yyyy') : 'All Time'}</p>
+            <p className="text-xs mt-4 text-emerald-50 bg-white/20 inline-block px-2 py-1 rounded-full">{month ? format(new Date(month + '-01'), 'MMMM yyyy') : 'All Time'}</p>
           </div>
           <div className="absolute right-0 bottom-0 opacity-10">
-            <IndianRupee size={160} className="-mr-10 -mb-10" />
+            <IndianRupee size={120} className="-mr-6 -mb-6" />
           </div>
         </div>
 
         <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
           <div className="relative z-10">
-            <p className="text-blue-100 font-medium mb-1">Total Rewards Given</p>
-            <h3 className="text-4xl font-bold flex items-center gap-2">
-              <IndianRupee size={32} /> {data.totalRewardsThisMonth}
+            <p className="text-blue-100 font-medium mb-1">Total Rewards</p>
+            <h3 className="text-3xl font-bold flex items-center gap-2">
+              <IndianRupee size={28} /> {data.totalRewardsThisMonth || 0}
             </h3>
-            <p className="text-sm mt-4 text-blue-50 bg-white/20 inline-block px-3 py-1 rounded-full">For {format(new Date(month + '-01'), 'MMMM yyyy')}</p>
+            <p className="text-xs mt-4 text-blue-50 bg-white/20 inline-block px-2 py-1 rounded-full">{month ? format(new Date(month + '-01'), 'MMMM yyyy') : 'All Time'}</p>
           </div>
           <div className="absolute right-0 bottom-0 opacity-10">
-            <Gift size={160} className="-mr-10 -mb-10" />
+            <Gift size={120} className="-mr-6 -mb-6" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+          <div className="relative z-10">
+            <p className="text-amber-100 font-medium mb-1">Total Income (Records)</p>
+            <h3 className="text-3xl font-bold flex items-center gap-2">
+              <IndianRupee size={28} /> {data.totalIncomeFromRecords || 0}
+            </h3>
+            <p className="text-xs mt-4 text-amber-50 bg-white/20 inline-block px-2 py-1 rounded-full">{month ? format(new Date(month + '-01'), 'MMMM yyyy') : 'All Time'}</p>
+          </div>
+          <div className="absolute right-0 bottom-0 opacity-10">
+            <IndianRupee size={120} className="-mr-6 -mb-6" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+          <div className="relative z-10">
+            <p className="text-red-100 font-medium mb-1">Total Expenses</p>
+            <h3 className="text-3xl font-bold flex items-center gap-2">
+              <IndianRupee size={28} /> {data.totalExpenseFromRecords || 0}
+            </h3>
+            <p className="text-xs mt-4 text-red-50 bg-white/20 inline-block px-2 py-1 rounded-full">{month ? format(new Date(month + '-01'), 'MMMM yyyy') : 'All Time'}</p>
+          </div>
+          <div className="absolute right-0 bottom-0 opacity-10">
+            <IndianRupee size={120} className="-mr-6 -mb-6" />
           </div>
         </div>
       </div>

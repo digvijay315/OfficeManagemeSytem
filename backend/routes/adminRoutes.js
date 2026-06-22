@@ -8,7 +8,9 @@ const {
     getAttendance, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
     getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest,
     verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport, updateTask, deleteTask,
-    getLeads, createLead, assignLead, updateLead, deleteLead
+    getLeads, createLead, assignLead, updateLead, deleteLead,
+    getIncomes, getPendingIncomeCount, createIncome, updateIncome, deleteIncome,
+    getExpenses, createExpense, deleteExpense
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -60,5 +62,15 @@ router.post('/leads', createLead);
 router.post('/leads/:id/assign', assignLead);
 router.put('/leads/:id', updateLead);
 router.delete('/leads/:id', deleteLead);
+
+router.get('/incomes', getIncomes);
+router.get('/incomes/pending-count', getPendingIncomeCount);
+router.post('/incomes', createIncome);
+router.put('/incomes/:id', updateIncome);
+router.delete('/incomes/:id', deleteIncome);
+
+router.get('/expenses', getExpenses);
+router.post('/expenses', createExpense);
+router.delete('/expenses/:id', deleteExpense);
 
 module.exports = router;

@@ -38,15 +38,30 @@ export default function AttendanceViewer() {
   };
 
   const [attendanceList, setAttendanceList] = useState([]);
-  const [filterDate, setFilterDate] = useState(''); // Empty means all dates
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [staffId, setStaffId] = useState('');
+  const [staffList, setStaffList] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedImage, setSelectedImage] = useState(null);
 
-  const fetchAttendance = async () => {
+  useEffect(() => {
+    const fetchStaff = async () => {
+      try {
+        const res = await api.get('/admin/staff?limit=1000');
+        setStaffList(res.data.data);
+      } catch (err) {
+        console.error('Error fetching staff list');
+      }
+    };
+    fetchStaff();
+  }, []);
+
+  const fetchAttendance = async (fDate = fromDate, tDate = toDate, sId = staffId, p = page) => {
     showLoader('Loading', 'Fetching attendance records...');
     try {
-      const res = await api.get(`/admin/attendance?page=${page}&limit=10`);
+      const res = await api.get(`/admin/attendance?page=${p}&limit=10&fromDate=${fDate}&toDate=${tDate}&staff_id=${sId}`);
       console.log(res);
       
       setAttendanceList(res.data.data);
@@ -60,12 +75,27 @@ export default function AttendanceViewer() {
   };
 
   useEffect(() => {
-    fetchAttendance();
+    fetchAttendance(fromDate, toDate, staffId, page);
   }, [page]);
 
-  const filteredList = filterDate 
-    ? attendanceList.filter(log => log.date === filterDate)
-    : attendanceList;
+  const handleSearch = () => {
+    if (page === 1) {
+      fetchAttendance(fromDate, toDate, staffId, 1);
+    } else {
+      setPage(1);
+    }
+  };
+
+  const clearFilters = () => {
+    setFromDate('');
+    setToDate('');
+    setStaffId('');
+    if (page === 1) {
+      fetchAttendance('', '', '', 1);
+    } else {
+      setPage(1);
+    }
+  };
 
   const getFullImageUrl = (url) => {
   
@@ -126,16 +156,51 @@ export default function AttendanceViewer() {
           </h2>
           <p className="text-teal-100">Monitor daily attendance, timings, and location proofs.</p>
         </div>
-        <div className="bg-white/20 p-4 rounded-xl backdrop-blur-sm flex items-center gap-3 w-full md:w-auto">
-          <Filter size={24} className="shrink-0" />
-          <div>
-            <p className="text-xs font-semibold text-teal-100 uppercase tracking-wider">Filter Date</p>
-            <input 
-              type="date" 
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              className="bg-transparent text-white font-bold text-lg outline-none cursor-pointer"
-            />
+        <div className="bg-white/20 p-4 rounded-xl backdrop-blur-sm flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2">
+            <Filter size={24} className="shrink-0" />
+            <span className="text-sm font-semibold text-teal-100 uppercase tracking-wider hidden md:block">Filter</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 w-full justify-end">
+            <div>
+              <p className="text-xs font-semibold text-teal-100 uppercase tracking-wider mb-1">From Date</p>
+              <input 
+                type="date" 
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="bg-transparent border border-teal-400/30 rounded p-1.5 text-white font-medium text-sm outline-none cursor-pointer w-full md:w-auto"
+              />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-teal-100 uppercase tracking-wider mb-1">To Date</p>
+              <input 
+                type="date" 
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="bg-transparent border border-teal-400/30 rounded p-1.5 text-white font-medium text-sm outline-none cursor-pointer w-full md:w-auto"
+              />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-teal-100 uppercase tracking-wider mb-1">Staff</p>
+              <select
+                value={staffId}
+                onChange={(e) => setStaffId(e.target.value)}
+                className="bg-teal-700/50 border border-teal-400/30 rounded p-1.5 text-white font-medium text-sm outline-none cursor-pointer w-full md:w-auto"
+              >
+                <option value="" className="text-black">All Staff</option>
+                {staffList.map(s => (
+                  <option key={s._id} value={s._id} className="text-black">{s.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="self-end pb-0.5">
+              <button 
+                onClick={handleSearch}
+                className="bg-white text-teal-700 px-4 py-1.5 rounded font-bold text-sm hover:bg-teal-50 transition-colors shadow-sm"
+              >
+                Search
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -143,10 +208,10 @@ export default function AttendanceViewer() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
           <h3 className="text-xl font-bold text-gray-800">
-            {filterDate ? `Attendance for ${filterDate}` : 'All Attendance Logs'}
+            {fromDate || toDate || staffId ? 'Filtered Attendance Logs' : 'All Attendance Logs'}
           </h3>
-          {filterDate && (
-            <button onClick={() => setFilterDate('')} className="text-sm text-indigo-600 hover:underline font-medium">
+          {(fromDate || toDate || staffId) && (
+            <button onClick={clearFilters} className="text-sm text-indigo-600 hover:underline font-medium">
               Clear Filter
             </button>
           )}
@@ -165,7 +230,7 @@ export default function AttendanceViewer() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredList.map((log) => (
+              {attendanceList.map((log) => (
                 <tr key={log.id} className="hover:bg-teal-50/30 transition-colors">
                   <td className="p-5 font-bold text-gray-800">{log.date}</td>
                   <td className="p-5">
@@ -263,7 +328,7 @@ export default function AttendanceViewer() {
                   </td>
                 </tr>
               ))}
-              {filteredList.length === 0 && (
+              {attendanceList.length === 0 && (
                 <tr>
                   <td colSpan="6" className="p-12 text-center text-gray-400">
                     <div className="flex flex-col items-center justify-center">

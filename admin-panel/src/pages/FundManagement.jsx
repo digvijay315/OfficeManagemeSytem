@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
 import { showAlert, showLoader, closeLoader, showConfirm } from '../utils/swalUtils';
-import { Wallet, IndianRupee, Calendar, CheckCircle, HandCoins, User, Clock, Check, X, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { Wallet, IndianRupee, Calendar, CheckCircle, HandCoins, User, Clock, Check, X, FileText, ChevronDown, ChevronUp, Plus, DollarSign, ArrowUpRight, ArrowDownRight, Edit } from 'lucide-react';
 import Swal from 'sweetalert2';
 import SalaryReportModal from '../components/SalaryReportModal';
 
@@ -25,6 +25,26 @@ export default function FundManagement() {
   const [historyMonth, setHistoryMonth] = useState('');
   const [staffList, setStaffList] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState('');
+
+  // Revenue & Income State
+  const [incomes, setIncomes] = useState([]);
+  const [incomePage, setIncomePage] = useState(1);
+  const [incomeTotalPages, setIncomeTotalPages] = useState(1);
+  const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
+  const [editingIncomeId, setEditingIncomeId] = useState(null);
+  const [incomeForm, setIncomeForm] = useState({
+    customerName: '', mobileNo: '', workType: '', amount: '', date: new Date().toISOString().split('T')[0], status: 'pending'
+  });
+
+  // Expense State
+  const [expenses, setExpenses] = useState([]);
+  const [expensePage, setExpensePage] = useState(1);
+  const [expenseTotalPages, setExpenseTotalPages] = useState(1);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState(null);
+  const [expenseForm, setExpenseForm] = useState({
+    reason: '', staff_id: '', amount: '', date: new Date().toISOString().split('T')[0]
+  });
 
   // Initial Fetch Staff List for filters
   useEffect(() => {
@@ -71,11 +91,33 @@ export default function FundManagement() {
     }
   };
 
+  const fetchIncomes = async () => {
+    try {
+      const res = await api.get(`/admin/incomes?page=${incomePage}&limit=10`);
+      setIncomes(res.data.data);
+      setIncomeTotalPages(res.data.pages || 1);
+    } catch (err) {
+      console.error('Error fetching incomes');
+    }
+  };
+
+  const fetchExpenses = async () => {
+    try {
+      const res = await api.get(`/admin/expenses?page=${expensePage}&limit=10`);
+      setExpenses(res.data.data);
+      setExpenseTotalPages(res.data.pages || 1);
+    } catch (err) {
+      console.error('Error fetching expenses');
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'salary' && selectedMonth) fetchSummary(selectedMonth);
     if (activeTab === 'requests') fetchRequests();
     if (activeTab === 'history') fetchHistory();
-  }, [activeTab, selectedMonth, historyPage, historyMonth, selectedStaff]);
+    if (activeTab === 'revenue') fetchIncomes();
+    if (activeTab === 'expense') fetchExpenses();
+  }, [activeTab, selectedMonth, historyPage, historyMonth, selectedStaff, incomePage, expensePage]);
 
   const handleGenerateReport = async (staffId) => {
     try {
@@ -217,6 +259,112 @@ export default function FundManagement() {
     }
   };
 
+  // Income & Expense Handlers
+  const handleAddIncome = () => {
+    setEditingIncomeId(null);
+    setIncomeForm({ customerName: '', mobileNo: '', workType: '', amount: '', date: new Date().toISOString().split('T')[0], status: 'pending' });
+    setIsIncomeModalOpen(true);
+  };
+
+  const handleEditIncome = (inc) => {
+    setEditingIncomeId(inc._id);
+    setIncomeForm({
+      customerName: inc.customerName,
+      mobileNo: inc.mobileNo,
+      workType: inc.workType || inc.description,
+      amount: inc.amount,
+      date: inc.date,
+      status: inc.status
+    });
+    setIsIncomeModalOpen(true);
+  };
+
+  const submitIncome = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingIncomeId) {
+        await api.put(`/admin/incomes/${editingIncomeId}`, incomeForm);
+        await Swal.fire('Updated', 'Income record updated.', 'success');
+      } else {
+        await api.post('/admin/incomes', incomeForm);
+        await Swal.fire('Added', 'Income recorded.', 'success');
+      }
+      setIsIncomeModalOpen(false);
+      fetchIncomes();
+      setIncomeForm({ customerName: '', mobileNo: '', workType: '', amount: '', date: new Date().toISOString().split('T')[0], status: 'pending' });
+      setEditingIncomeId(null);
+    } catch (e) {
+      Swal.fire('Error', editingIncomeId ? 'Could not update income' : 'Could not add income', 'error');
+    }
+  };
+
+  const handleUpdateIncomeStatus = async (id, status) => {
+    try {
+      await api.put(`/admin/incomes/${id}`, { status });
+      fetchIncomes();
+    } catch (e) {
+      Swal.fire('Error', 'Could not update status', 'error');
+    }
+  };
+
+  const handleDeleteIncome = async (id) => {
+    if (await showConfirm('Delete Income', 'Are you sure you want to delete this record?', 'Delete', 'error')) {
+      try {
+        await api.delete(`/admin/incomes/${id}`);
+        fetchIncomes();
+      } catch (e) {
+        Swal.fire('Error', 'Could not delete', 'error');
+      }
+    }
+  };
+
+  const handleAddExpense = () => {
+    setEditingExpenseId(null);
+    setExpenseForm({ reason: '', staff_id: '', amount: '', date: new Date().toISOString().split('T')[0] });
+    setIsExpenseModalOpen(true);
+  };
+
+  const handleEditExpense = (exp) => {
+    setEditingExpenseId(exp._id);
+    setExpenseForm({
+      reason: exp.reason || exp.description,
+      staff_id: exp.staff_id?._id || '',
+      amount: exp.amount,
+      date: exp.date
+    });
+    setIsExpenseModalOpen(true);
+  };
+
+  const submitExpense = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingExpenseId) {
+        await api.put(`/admin/expenses/${editingExpenseId}`, expenseForm);
+        await Swal.fire('Updated', 'Expense record updated.', 'success');
+      } else {
+        await api.post('/admin/expenses', expenseForm);
+        await Swal.fire('Added', 'Expense recorded.', 'success');
+      }
+      setIsExpenseModalOpen(false);
+      fetchExpenses();
+      setExpenseForm({ reason: '', staff_id: '', amount: '', date: new Date().toISOString().split('T')[0] });
+      setEditingExpenseId(null);
+    } catch (e) {
+      Swal.fire('Error', editingExpenseId ? 'Could not update expense' : 'Could not add expense', 'error');
+    }
+  };
+
+  const handleDeleteExpense = async (id) => {
+    if (await showConfirm('Delete Expense', 'Are you sure?', 'Delete', 'error')) {
+      try {
+        await api.delete(`/admin/expenses/${id}`);
+        fetchExpenses();
+      } catch (e) {
+        Swal.fire('Error', 'Could not delete', 'error');
+      }
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       
@@ -247,6 +395,18 @@ export default function FundManagement() {
             className={`px-6 py-3 font-semibold text-sm rounded-t-lg transition-colors ${activeTab === 'history' ? 'bg-white text-emerald-800' : 'text-emerald-100 hover:bg-emerald-700 hover:text-white'}`}
           >
             Advance History
+          </button>
+          <button 
+            onClick={() => setActiveTab('revenue')}
+            className={`px-6 py-3 font-semibold text-sm rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'revenue' ? 'bg-white text-emerald-800' : 'text-emerald-100 hover:bg-emerald-700 hover:text-white'}`}
+          >
+            <ArrowDownRight size={16} /> Revenue & Income
+          </button>
+          <button 
+            onClick={() => setActiveTab('expense')}
+            className={`px-6 py-3 font-semibold text-sm rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'expense' ? 'bg-white text-emerald-800' : 'text-emerald-100 hover:bg-emerald-700 hover:text-white'}`}
+          >
+            <ArrowUpRight size={16} /> Expenses
           </button>
         </div>
       </div>
@@ -522,6 +682,242 @@ export default function FundManagement() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* REVENUE TAB */}
+      {activeTab === 'revenue' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-300">
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2"><ArrowDownRight className="text-emerald-500"/> Revenue & Incomes</h3>
+            <button 
+              onClick={handleAddIncome}
+              className="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 transition-colors shadow flex items-center gap-2 text-sm"
+            >
+              <Plus size={18} /> Add Income
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50 text-gray-600 text-sm tracking-wider uppercase border-b border-gray-200">
+                  <th className="p-5 font-semibold">Date</th>
+                  <th className="p-5 font-semibold">Customer</th>
+                  <th className="p-5 font-semibold">Work Type</th>
+                  <th className="p-5 font-semibold text-right">Amount</th>
+                  <th className="p-5 font-semibold text-center">Status</th>
+                  <th className="p-5 font-semibold text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {incomes.map((inc) => (
+                  <tr key={inc._id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="p-5 text-gray-600 font-medium text-sm">{inc.date}</td>
+                    <td className="p-5">
+                      <p className="font-bold text-gray-800 text-sm">{inc.customerName || 'N/A'}</p>
+                      <p className="text-xs text-gray-500">{inc.mobileNo}</p>
+                    </td>
+                    <td className="p-5 text-gray-800 text-sm">{inc.workType || inc.description || 'N/A'}</td>
+                    <td className="p-5 text-right font-bold text-emerald-600">₹{inc.amount}</td>
+                    <td className="p-5 text-center">
+                      {inc.status === 'success' ? (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">Complete</span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700">Pending</span>
+                      )}
+                    </td>
+                    <td className="p-5 text-center">
+                      <div className="flex justify-center gap-2">
+                        {inc.status === 'pending' && (
+                          <button onClick={() => handleUpdateIncomeStatus(inc._id, 'success')} className="p-1.5 bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 transition-colors" title="Mark Success">
+                            <Check size={16} strokeWidth={3} />
+                          </button>
+                        )}
+                        <button onClick={() => handleEditIncome(inc)} className="p-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors" title="Edit">
+                          <Edit size={16} strokeWidth={3} />
+                        </button>
+                        <button onClick={() => handleDeleteIncome(inc._id)} className="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors" title="Delete">
+                          <X size={16} strokeWidth={3} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {incomes.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="p-8 text-center text-gray-500">No income records found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {/* Pagination for Incomes */}
+          {incomeTotalPages > 1 && (
+            <div className="p-4 border-t border-gray-100 flex justify-between items-center bg-gray-50">
+              <span className="text-sm text-gray-600">Page <b>{incomePage}</b> of <b>{incomeTotalPages}</b></span>
+              <div className="flex gap-2">
+                <button disabled={incomePage === 1} onClick={() => setIncomePage(p => p - 1)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-100 disabled:opacity-50">Previous</button>
+                <button disabled={incomePage === incomeTotalPages} onClick={() => setIncomePage(p => p + 1)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-100 disabled:opacity-50">Next</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* EXPENSE TAB */}
+      {activeTab === 'expense' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-300">
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2"><ArrowUpRight className="text-red-500"/> Expenses</h3>
+            <button 
+              onClick={handleAddExpense}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-700 transition-colors shadow flex items-center gap-2 text-sm"
+            >
+              <Plus size={18} /> Add Expense
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50 text-gray-600 text-sm tracking-wider uppercase border-b border-gray-200">
+                  <th className="p-5 font-semibold">Date</th>
+                  <th className="p-5 font-semibold">Reason</th>
+                  <th className="p-5 font-semibold">Staff</th>
+                  <th className="p-5 font-semibold text-right">Amount</th>
+                  <th className="p-5 font-semibold text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {expenses.map((exp) => (
+                  <tr key={exp._id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="p-5 text-gray-600 font-medium text-sm">{exp.date}</td>
+                    <td className="p-5 text-gray-800 text-sm">{exp.reason || exp.description || 'N/A'}</td>
+                    <td className="p-5 text-gray-800 text-sm font-medium">{exp.staff_id?.name || 'N/A'}</td>
+                    <td className="p-5 text-right font-bold text-red-600">₹{exp.amount}</td>
+                    <td className="p-5 text-center">
+                      <div className="flex justify-center gap-2">
+                        <button onClick={() => handleEditExpense(exp)} className="p-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors" title="Edit">
+                          <Edit size={16} strokeWidth={3} />
+                        </button>
+                        <button onClick={() => handleDeleteExpense(exp._id)} className="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors" title="Delete">
+                          <X size={16} strokeWidth={3} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {expenses.length === 0 && (
+                  <tr>
+                    <td colSpan="4" className="p-8 text-center text-gray-500">No expense records found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {/* Pagination for Expenses */}
+          {expenseTotalPages > 1 && (
+            <div className="p-4 border-t border-gray-100 flex justify-between items-center bg-gray-50">
+              <span className="text-sm text-gray-600">Page <b>{expensePage}</b> of <b>{expenseTotalPages}</b></span>
+              <div className="flex gap-2">
+                <button disabled={expensePage === 1} onClick={() => setExpensePage(p => p - 1)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-100 disabled:opacity-50">Previous</button>
+                <button disabled={expensePage === expenseTotalPages} onClick={() => setExpensePage(p => p + 1)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-100 disabled:opacity-50">Next</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ADD/EDIT INCOME MODAL */}
+      {isIncomeModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-emerald-600 p-4 text-white flex justify-between items-center">
+              <h3 className="text-xl font-bold flex items-center gap-2"><ArrowDownRight size={20} /> {editingIncomeId ? 'Edit' : 'Add'} Revenue / Income</h3>
+              <button onClick={() => setIsIncomeModalOpen(false)} className="hover:bg-emerald-700 p-1 rounded"><X size={20} /></button>
+            </div>
+            <form onSubmit={submitIncome} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 md:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                  <input required type="text" value={incomeForm.customerName} onChange={e => setIncomeForm({...incomeForm, customerName: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g. John Doe" />
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mobile No</label>
+                  <input required type="text" value={incomeForm.mobileNo} onChange={e => setIncomeForm({...incomeForm, mobileNo: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g. 9876543210" />
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Work Type</label>
+                  <select required value={incomeForm.workType} onChange={e => setIncomeForm({...incomeForm, workType: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                    <option value="">Select Work</option>
+                    <option value="Internet Recharge">Internet Recharge</option>
+                    <option value="Internet Connection">Internet Connection</option>
+                    <option value="CCTV Sale">CCTV Sale</option>
+                    <option value="CCTV Service">CCTV Service</option>
+                    <option value="Router and Switch">Router and Switch</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <input required type="date" value={incomeForm.date} onChange={e => setIncomeForm({...incomeForm, date: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500" />
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
+                  <input required type="number" value={incomeForm.amount} onChange={e => setIncomeForm({...incomeForm, amount: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500" placeholder="0" />
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select required value={incomeForm.status} onChange={e => setIncomeForm({...incomeForm, status: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                    <option value="pending">Pending</option>
+                    <option value="success">Complete</option>
+                  </select>
+                </div>
+              </div>
+              <div className="pt-4 flex justify-end gap-2">
+                <button type="button" onClick={() => setIsIncomeModalOpen(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-bold shadow">Save Record</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ADD/EDIT EXPENSE MODAL */}
+      {isExpenseModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-red-600 p-4 text-white flex justify-between items-center">
+              <h3 className="text-xl font-bold flex items-center gap-2"><ArrowUpRight size={20} /> {editingExpenseId ? 'Edit' : 'Add'} Expense</h3>
+              <button onClick={() => setIsExpenseModalOpen(false)} className="hover:bg-red-700 p-1 rounded"><X size={20} /></button>
+            </div>
+            <form onSubmit={submitExpense} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Reason</label>
+                  <input required type="text" value={expenseForm.reason} onChange={e => setExpenseForm({...expenseForm, reason: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-red-500" placeholder="e.g. Office Supplies, Fuel, etc." />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Staff</label>
+                  <select required value={expenseForm.staff_id} onChange={e => setExpenseForm({...expenseForm, staff_id: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-red-500 bg-white">
+                    <option value="">Select Staff</option>
+                    {staffList.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <input required type="date" value={expenseForm.date} onChange={e => setExpenseForm({...expenseForm, date: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-red-500" />
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
+                  <input required type="number" value={expenseForm.amount} onChange={e => setExpenseForm({...expenseForm, amount: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-red-500" placeholder="0" />
+                </div>
+              </div>
+              <div className="pt-4 flex justify-end gap-2">
+                <button type="button" onClick={() => setIsExpenseModalOpen(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow">Save Record</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
