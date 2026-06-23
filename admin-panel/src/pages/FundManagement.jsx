@@ -901,7 +901,9 @@ export default function FundManagement() {
                   <select required value={expenseForm.staff_id} onChange={e => setExpenseForm({...expenseForm, staff_id: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-red-500 bg-white">
                     <option value="">Select Staff</option>
                     {staffList.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                    <option value="">Self</option>
                   </select>
+                  
                 </div>
                 <div className="col-span-2 md:col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
