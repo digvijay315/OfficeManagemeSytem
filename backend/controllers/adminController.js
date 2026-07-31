@@ -261,7 +261,7 @@ const getFundsSummary = async (req, res) => {
             const payment = allPayments.find(p => p.staff_id.toString() === staff.id);
             const baseSalary = staff.salary || 0;
             
-            const dailyWage = baseSalary / daysInMonth;
+            const dailyWage = baseSalary / 30;
             const deduction = Math.round(absentDays * dailyWage);
             
             const effectiveSalary = baseSalary + totalReward;
@@ -615,7 +615,7 @@ const getStaffReport = async (req, res) => {
         }
 
         const baseSalary = staff.salary || 0;
-        const dailyWage = baseSalary / daysInMonth;
+        const dailyWage = baseSalary / 30;
 
         const allAttendances = await Attendance.find({ staff_id, date: { $regex: `^${month}` } });
         const presentDates = new Set(allAttendances.map(a => a.date));
@@ -830,6 +830,26 @@ const createExpense = async (req, res) => {
     }
 };
 
+const updateExpense = async (req, res) => {
+    try {
+        const updateData = { ...req.body };
+        // If staff_id is explicitly removed/unset by the frontend payload missing it,
+        // we should unset it in the database.
+        if (!updateData.staff_id) {
+            updateData.$unset = { staff_id: 1 };
+        }
+        
+        const expense = await Expense.findByIdAndUpdate(
+            req.params.id, 
+            updateData,
+            { new: true }
+        );
+        res.json(expense);
+    } catch (err) {
+        res.status(400).json({ error: 'Error updating expense' });
+    }
+};
+
 const deleteExpense = async (req, res) => {
     try {
         await Expense.findByIdAndDelete(req.params.id);
@@ -848,5 +868,5 @@ module.exports = {
     verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport, updateTask, deleteTask,
     getLeads, createLead, assignLead, updateLead, deleteLead,
     getIncomes, getPendingIncomeCount, createIncome, updateIncome, deleteIncome,
-    getExpenses, createExpense, deleteExpense
+    getExpenses, createExpense, updateExpense, deleteExpense
 };

@@ -40,7 +40,7 @@ const SalaryReportModal = ({ reportData, month, onClose }) => {
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     doc.text(staff.email, 14, 62);
-    doc.text(`Daily Wage: Rs ${Math.round(staff.baseSalary / summary.daysInMonth)}`, pageWidth / 2 + 20, 62);
+    doc.text(`Daily Wage: Rs ${Math.round(staff.baseSalary / 30)}`, pageWidth / 2 + 20, 62);
 
     let startY = 75;
 
@@ -192,7 +192,7 @@ const SalaryReportModal = ({ reportData, month, onClose }) => {
               <div className="text-right">
                 <h3 className="text-sm text-gray-500 uppercase tracking-wider mb-1">Salary Details</h3>
                 <p className="text-gray-600">Base Salary: <span className="font-bold text-gray-800">₹{staff.baseSalary}</span></p>
-                <p className="text-gray-600">Daily Wage: ₹{Math.round(staff.baseSalary / summary.daysInMonth)}</p>
+                <p className="text-gray-600">Daily Wage: ₹{Math.round(staff.baseSalary / 30)}</p>
               </div>
             </div>
 

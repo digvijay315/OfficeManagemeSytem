@@ -328,7 +328,7 @@ export default function FundManagement() {
     setEditingExpenseId(exp._id);
     setExpenseForm({
       reason: exp.reason || exp.description,
-      staff_id: exp.staff_id?._id || '',
+      staff_id: exp.staff_id?._id || 'none',
       amount: exp.amount,
       date: exp.date
     });
@@ -338,11 +338,16 @@ export default function FundManagement() {
   const submitExpense = async (e) => {
     e.preventDefault();
     try {
+      const payload = { ...expenseForm };
+      if (payload.staff_id === 'none' || payload.staff_id === '') {
+        delete payload.staff_id;
+      }
+
       if (editingExpenseId) {
-        await api.put(`/admin/expenses/${editingExpenseId}`, expenseForm);
+        await api.put(`/admin/expenses/${editingExpenseId}`, payload);
         await Swal.fire('Updated', 'Expense record updated.', 'success');
       } else {
-        await api.post('/admin/expenses', expenseForm);
+        await api.post('/admin/expenses', payload);
         await Swal.fire('Added', 'Expense recorded.', 'success');
       }
       setIsExpenseModalOpen(false);
@@ -792,7 +797,7 @@ export default function FundManagement() {
                   <tr key={exp._id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="p-5 text-gray-600 font-medium text-sm">{exp.date}</td>
                     <td className="p-5 text-gray-800 text-sm">{exp.reason || exp.description || 'N/A'}</td>
-                    <td className="p-5 text-gray-800 text-sm font-medium">{exp.staff_id?.name || 'N/A'}</td>
+                    <td className="p-5 text-gray-800 text-sm font-medium">{exp.staff_id?.name || 'Self'}</td>
                     <td className="p-5 text-right font-bold text-red-600">₹{exp.amount}</td>
                     <td className="p-5 text-center">
                       <div className="flex justify-center gap-2">
@@ -898,10 +903,10 @@ export default function FundManagement() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Staff</label>
-                  <select required value={expenseForm.staff_id} onChange={e => setExpenseForm({...expenseForm, staff_id: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-red-500 bg-white">
+                  <select value={expenseForm.staff_id} onChange={e => setExpenseForm({...expenseForm, staff_id: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-red-500 bg-white">
                     <option value="">Select Staff</option>
                     {staffList.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
-                    <option value="">Self</option>
+                    <option value="none">Self</option>
                   </select>
                   
                 </div>

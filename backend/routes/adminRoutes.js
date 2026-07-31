@@ -10,7 +10,7 @@ const {
     verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport, updateTask, deleteTask,
     getLeads, createLead, assignLead, updateLead, deleteLead,
     getIncomes, getPendingIncomeCount, createIncome, updateIncome, deleteIncome,
-    getExpenses, createExpense, deleteExpense
+    getExpenses, createExpense, updateExpense, deleteExpense
 } = require('../controllers/adminController');
 
 const router = express.Router();
@@ -71,6 +71,7 @@ router.delete('/incomes/:id', deleteIncome);
 
 router.get('/expenses', getExpenses);
 router.post('/expenses', createExpense);
+router.put('/expenses/:id', updateExpense);
 router.delete('/expenses/:id', deleteExpense);
 
 module.exports = router;
