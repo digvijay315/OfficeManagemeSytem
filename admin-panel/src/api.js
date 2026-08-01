@@ -18,6 +18,8 @@ const showLoader = () => {
   activeRequests++;
 };
 
+// 
+
 const hideLoader = () => {
   activeRequests--;
   if (activeRequests <= 0) {
