@@ -261,7 +261,7 @@ const getFundsSummary = async (req, res) => {
             const payment = allPayments.find(p => p.staff_id.toString() === staff.id);
             const baseSalary = staff.salary || 0;
             
-            const dailyWage = baseSalary / 30;
+            const dailyWage = baseSalary / daysInMonth;
             const deduction = Math.round(absentDays * dailyWage);
             
             const effectiveSalary = baseSalary + totalReward;
@@ -615,7 +615,7 @@ const getStaffReport = async (req, res) => {
         }
 
         const baseSalary = staff.salary || 0;
-        const dailyWage = baseSalary / 30;
+        const dailyWage = baseSalary / daysInMonth;
 
         const allAttendances = await Attendance.find({ staff_id, date: { $regex: `^${month}` } });
         const presentDates = new Set(allAttendances.map(a => a.date));
