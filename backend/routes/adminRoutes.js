@@ -15,7 +15,8 @@ const {
 
 const router = express.Router();
 
-// Apply adminMiddleware to all routes in this file
+// all admin routes
+// Apply adminMiddleware to all routes in this  
 // Notice: authMiddleware should be applied before this router in server.js
 router.use(adminMiddleware);
 
