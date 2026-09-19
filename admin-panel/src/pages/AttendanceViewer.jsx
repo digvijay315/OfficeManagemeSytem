@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
-import { Calendar, MapPin, Clock, CheckCircle, User, Filter, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, MapPin, Clock, CheckCircle, User, Filter, AlertCircle, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { showLoader, closeLoader, showAlert } from '../utils/swalUtils';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export default function AttendanceViewer() {
   const AddressDisplay = ({ coords }) => {
@@ -146,6 +148,29 @@ export default function AttendanceViewer() {
     }
   };
 
+  const handleDownloadPDF = async () => {
+    try {
+      showLoader('Preparing PDF', 'Please wait...');
+      const response = await api.get(`/admin/attendance/pdf?fromDate=${fromDate}&toDate=${toDate}&staff_id=${staffId}`, {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Attendance_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      
+      closeLoader();
+    } catch (err) {
+      closeLoader();
+      console.error('Error downloading PDF', err);
+      showAlert('Error', 'Failed to generate PDF from server', 'error');
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Header */}
@@ -210,11 +235,16 @@ export default function AttendanceViewer() {
           <h3 className="text-xl font-bold text-gray-800">
             {fromDate || toDate || staffId ? 'Filtered Attendance Logs' : 'All Attendance Logs'}
           </h3>
-          {(fromDate || toDate || staffId) && (
-            <button onClick={clearFilters} className="text-sm text-indigo-600 hover:underline font-medium">
-              Clear Filter
+          <div className="flex items-center gap-4">
+            <button onClick={handleDownloadPDF} className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-teal-700 transition-colors shadow-sm">
+              <Download size={16} /> Download PDF
             </button>
-          )}
+            {(fromDate || toDate || staffId) && (
+              <button onClick={clearFilters} className="text-sm text-indigo-600 hover:underline font-medium">
+                Clear Filter
+              </button>
+            )}
+          </div>
         </div>
       
         <div className="overflow-x-auto">

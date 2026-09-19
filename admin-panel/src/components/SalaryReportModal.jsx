@@ -40,7 +40,7 @@ const SalaryReportModal = ({ reportData, month, onClose }) => {
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     doc.text(staff.email, 14, 62);
-    doc.text(`Daily Wage: Rs ${Math.round(staff.baseSalary / 30)}`, pageWidth / 2 + 20, 62);
+    doc.text(`Daily Wage: Rs ${staff.dailyWage}`, pageWidth / 2 + 20, 62);
 
     let startY = 75;
 
@@ -108,6 +108,49 @@ const SalaryReportModal = ({ reportData, month, onClose }) => {
     if (startY > doc.internal.pageSize.height - 70) {
       doc.addPage();
       startY = 20;
+    }
+
+    // Till Date Summary Box (if applicable)
+    if (summary.daysPassedInMonth < summary.daysInMonth) {
+      doc.setDrawColor(200, 200, 200);
+      doc.setFillColor(250, 250, 250);
+      doc.rect(14, startY, pageWidth - 28, 65, 'FD');
+
+      doc.setFontSize(14);
+      doc.setTextColor(50, 50, 50);
+      doc.text(`Till Date Summary (Up to ${summary.daysPassedInMonth}th)`, 20, startY + 10);
+
+      doc.setFontSize(11);
+      doc.text(`Base Salary (Till Date):`, 20, startY + 22);
+      doc.text(`Rs ${summary.tillDateBaseSalary}`, pageWidth - 20, startY + 22, { align: 'right' });
+
+      doc.setTextColor(16, 185, 129);
+      doc.text(`Total Rewards:`, 20, startY + 30);
+      doc.text(`+ Rs ${summary.totalReward}`, pageWidth - 20, startY + 30, { align: 'right' });
+
+      doc.setTextColor(239, 68, 68);
+      doc.text(`Absent Deduction (${summary.absentDays} Days):`, 20, startY + 38);
+      doc.text(`- Rs ${summary.deduction}`, pageWidth - 20, startY + 38, { align: 'right' });
+
+      doc.setTextColor(249, 115, 22);
+      doc.text(`Total Advance Taken:`, 20, startY + 46);
+      doc.text(`- Rs ${summary.totalAdvance}`, pageWidth - 20, startY + 46, { align: 'right' });
+
+      doc.setDrawColor(200, 200, 200);
+      doc.line(20, startY + 52, pageWidth - 20, startY + 52);
+
+      doc.setFontSize(16);
+      doc.setTextColor(63, 81, 181);
+      doc.text(`Amount Till Date:`, 20, startY + 60);
+      doc.text(`Rs ${summary.tillDateRemaining}`, pageWidth - 20, startY + 60, { align: 'right' });
+
+      startY += 80;
+
+      // Add page if needed before final summary
+      if (startY > doc.internal.pageSize.height - 70) {
+        doc.addPage();
+        startY = 20;
+      }
     }
 
     // Summary Box
@@ -192,7 +235,7 @@ const SalaryReportModal = ({ reportData, month, onClose }) => {
               <div className="text-right">
                 <h3 className="text-sm text-gray-500 uppercase tracking-wider mb-1">Salary Details</h3>
                 <p className="text-gray-600">Base Salary: <span className="font-bold text-gray-800">₹{staff.baseSalary}</span></p>
-                <p className="text-gray-600">Daily Wage: ₹{Math.round(staff.baseSalary / 30)}</p>
+                <p className="text-gray-600">Daily Wage: ₹{staff.dailyWage}</p>
               </div>
             </div>
 
@@ -280,9 +323,37 @@ const SalaryReportModal = ({ reportData, month, onClose }) => {
               </div>
             </div>
 
+            {/* Conditional Till Date Summary */}
+            {summary.daysPassedInMonth < summary.daysInMonth && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 w-1/2 ml-auto mb-6">
+                <h3 className="text-lg font-bold mb-4 text-blue-900 border-b border-blue-200 pb-2">Till Date Summary (Up to {summary.daysPassedInMonth}th)</h3>
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-600">Base Salary (Till Date):</span>
+                  <span className="font-semibold">₹{summary.tillDateBaseSalary}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-emerald-600">Total Rewards:</span>
+                  <span className="font-semibold text-emerald-600">+ ₹{summary.totalReward}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-red-500">Absent Deduction ({summary.absentDays} Days):</span>
+                  <span className="font-semibold text-red-500">- ₹{summary.deduction}</span>
+                </div>
+                <div className="flex justify-between mb-4 border-b border-blue-200 pb-4">
+                  <span className="text-orange-500">Total Advance Taken:</span>
+                  <span className="font-semibold text-orange-500">- ₹{summary.totalAdvance}</span>
+                </div>
+                
+                <div className="flex justify-between text-xl font-bold">
+                  <span className="text-blue-900">Amount Till Date:</span>
+                  <span className="text-indigo-700">₹{summary.tillDateRemaining}</span>
+                </div>
+              </div>
+            )}
+
             {/* Final Calculation Summary */}
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 w-1/2 ml-auto">
-              <h3 className="text-lg font-bold mb-4 text-gray-800 border-b border-gray-300 pb-2">Final Payment Summary</h3>
+              <h3 className="text-lg font-bold mb-4 text-gray-800 border-b border-gray-300 pb-2">Final Payment Summary (Full Month)</h3>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Base Salary:</span>
                 <span className="font-semibold">₹{staff.baseSalary}</span>

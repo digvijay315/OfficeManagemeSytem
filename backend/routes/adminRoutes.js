@@ -5,7 +5,7 @@ const {
     getStaff, createStaff, updateStaff, deleteStaff,
     getSubadmins, createSubadmin, updateSubadmin, deleteSubadmin,
     assignTask, getGroupedTasks, recordFund, getFundsSummary, paySalary,
-    getAttendance, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
+    getAttendance, getAttendancePDF, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
     getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest,
     verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport, updateTask, deleteTask,
     getLeads, createLead, assignLead, updateLead, deleteLead,
@@ -52,6 +52,7 @@ router.get('/revenue-reports', getRevenueReports);
 router.post('/pay-salary', paySalary);
 
 router.get('/attendance', getAttendance);
+router.get('/attendance/pdf', getAttendancePDF);
 
 router.get('/predefined-tasks', getPredefinedTasks);
 router.post('/predefined-tasks', createPredefinedTask);

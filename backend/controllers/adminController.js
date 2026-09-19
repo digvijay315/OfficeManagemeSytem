@@ -10,6 +10,7 @@ const Expense = require('../models/Expense');
 const { staffSchema, subadminSchema } = require('../validations/staffValidation');
 const mongoose = require('mongoose');
 const { getPagination } = require('../utils/pagination');
+const PDFDocument = require('pdfkit-table');
 
 const getGroupedTasks = async (req, res) => {
     const { page, limit, skip } = getPagination(req);
@@ -88,10 +89,10 @@ const createStaff = async (req, res) => {
     const { error } = staffSchema.validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
-    const { name, email, password, mobile, salary, Upload, documentName, documentNo, address, bankName, accountNo, ifscCode, branchName, joinedDate } = req.body;
+    const { name, email, password, mobile, salary, dailyWage, Upload, documentName, documentNo, address, bankName, accountNo, ifscCode, branchName, joinedDate } = req.body;
     try {
         const dateToSave = joinedDate || new Date().toISOString().split('T')[0];
-        const staff = await User.create({ name, email, password, role: 'staff', mobile, salary: salary || 0, Upload, documentName, documentNo, address, bankName, accountNo, ifscCode, branchName, joinedDate: dateToSave });
+        const staff = await User.create({ name, email, password, role: 'staff', mobile, salary: salary || 0, dailyWage: dailyWage || 0, Upload, documentName, documentNo, address, bankName, accountNo, ifscCode, branchName, joinedDate: dateToSave });
         res.json(staff);
     } catch (err) {
         res.status(400).json({ error: 'Error creating staff (Email might be duplicate)' });
@@ -259,9 +260,13 @@ const getFundsSummary = async (req, res) => {
             console.log(`Staff ${staff.name}: daysPassedInMonth=${daysPassedInMonth}, presentDays=${presentDays}, absentDays=${absentDays}, currentYear=${currentYear}, currentMonth=${currentMonth}, year=${year}, monthNum=${monthNum}, currentDate=${currentDate}`);
             
             const payment = allPayments.find(p => p.staff_id.toString() === staff.id);
-            const baseSalary = staff.salary || 0;
+            let baseSalary = staff.salary || 0;
+            let dailyWage = baseSalary / daysInMonth;
+            if (staff.dailyWage && staff.dailyWage > 0) {
+                dailyWage = staff.dailyWage;
+                baseSalary = dailyWage * daysInMonth;
+            }
             
-            const dailyWage = baseSalary / daysInMonth;
             const deduction = Math.round(absentDays * dailyWage);
             
             const effectiveSalary = baseSalary + totalReward;
@@ -332,6 +337,148 @@ const getAttendance = async (req, res) => {
         image_url: a.image_url
     }));
     res.json({ data: transformed, total, page, pages: Math.ceil(total / limit) });
+};
+
+const getAttendancePDF = async (req, res) => {
+    const { fromDate, toDate, staff_id } = req.query;
+
+    try {
+        let query = {};
+        if (fromDate || toDate) {
+            query.date = {};
+            if (fromDate) query.date.$gte = fromDate;
+            if (toDate) query.date.$lte = toDate;
+        }
+        if (staff_id) {
+            query.staff_id = new mongoose.Types.ObjectId(staff_id);
+        }
+
+        const attendances = await Attendance.find(query)
+            .populate('staff_id', 'name')
+            .sort({ date: -1 });
+
+        let staffQuery = { role: 'staff' };
+        if (staff_id) staffQuery._id = new mongoose.Types.ObjectId(staff_id);
+        const staffMembers = await User.find(staffQuery);
+
+        let datesToCheck = [];
+        if (fromDate && toDate) {
+            let start = new Date(fromDate);
+            let end = new Date(toDate);
+            for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
+                datesToCheck.push(new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0]);
+            }
+        } else if (fromDate) {
+            let start = new Date(fromDate);
+            let end = new Date();
+            for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
+                datesToCheck.push(new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0]);
+            }
+        } else {
+            datesToCheck = [...new Set(attendances.map(a => a.date))];
+            if (datesToCheck.length === 0) {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = today.getMonth();
+                for (let i = 1; i <= today.getDate(); i++) {
+                    const d = new Date(year, month, i);
+                    datesToCheck.push(new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0]);
+                }
+            }
+        }
+        datesToCheck.sort((a, b) => new Date(b) - new Date(a));
+
+        const combinedDatas = [];
+        datesToCheck.forEach(dateStr => {
+            staffMembers.forEach(staff => {
+                const record = attendances.find(a => a.date === dateStr && a.staff_id && a.staff_id._id.toString() === staff._id.toString());
+                if (record) {
+                    let worked = 'N/A';
+                    if (record.start_time && record.end_time) {
+                        try {
+                            const parseTime = (timeStr) => {
+                                const parts = timeStr.split(' ');
+                                const time = parts[0];
+                                const modifier = parts[1];
+                                let [hours, minutes, seconds] = time.split(':');
+                                if (hours === '12') hours = '00';
+                                if (modifier && modifier.toUpperCase() === 'PM') hours = parseInt(hours, 10) + 12;
+                                const d = new Date();
+                                d.setHours(parseInt(hours, 10), parseInt(minutes, 10), parseInt(seconds || 0, 10), 0);
+                                return d;
+                            };
+                            const start = parseTime(record.start_time);
+                            const end = parseTime(record.end_time);
+                            let diffMs = end - start;
+                            if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
+                            worked = `${Math.floor(diffMs / (1000 * 60 * 60))}h ${Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))}m`;
+                        } catch (e) {}
+                    }
+                    combinedDatas.push({
+                        date: dateStr,
+                        name: staff.name,
+                        in: record.start_time || 'N/A',
+                        out: record.end_time || 'Working',
+                        worked: worked,
+                        status: record.end_time ? 'Completed' : 'Active'
+                    });
+                } else {
+                    combinedDatas.push({
+                        date: dateStr,
+                        name: staff.name,
+                        in: '-',
+                        out: '-',
+                        worked: '-',
+                        status: 'Absent'
+                    });
+                }
+            });
+        });
+
+        const doc = new PDFDocument({ margin: 30, size: 'A4' });
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename=Attendance_Report.pdf');
+
+        doc.pipe(res);
+
+        doc.fontSize(16).text('Staff Attendance Report', { align: 'center' });
+        doc.moveDown(1);
+        if (fromDate || toDate) {
+            doc.fontSize(10).text(`Period: ${fromDate || 'Start'} to ${toDate || 'End'}`, { align: 'center' });
+            doc.moveDown(1);
+        }
+
+        const tableArray = {
+            headers: [
+                { label: "Date", property: 'date', width: 80 },
+                { label: "Staff Name", property: 'name', width: 120 },
+                { label: "In Time", property: 'in', width: 70 },
+                { label: "Out Time", property: 'out', width: 70 },
+                { label: "Worked Hours", property: 'worked', width: 80 },
+                { label: "Status", property: 'status', width: 70 }
+            ],
+            datas: combinedDatas
+        };
+
+        await doc.table(tableArray, {
+            prepareHeader: () => doc.font("Helvetica-Bold").fontSize(10),
+            prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
+                if (row.status === 'Absent') {
+                    doc.font("Helvetica").fontSize(9).fillColor('red');
+                } else {
+                    doc.font("Helvetica").fontSize(9).fillColor('black');
+                }
+            },
+        });
+
+        doc.end();
+    } catch (err) {
+        console.error('Error generating PDF:', err);
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Error generating PDF' });
+        }
+    }
 };
 
 const getPredefinedTasks = async (req, res) => {
@@ -614,8 +761,12 @@ const getStaffReport = async (req, res) => {
             daysPassedInMonth = 0;
         }
 
-        const baseSalary = staff.salary || 0;
-        const dailyWage = baseSalary / daysInMonth;
+        let baseSalary = staff.salary || 0;
+        let dailyWage = baseSalary / daysInMonth;
+        if (staff.dailyWage && staff.dailyWage > 0) {
+            dailyWage = staff.dailyWage;
+            baseSalary = dailyWage * daysInMonth;
+        }
 
         const allAttendances = await Attendance.find({ staff_id, date: { $regex: `^${month}` } });
         const presentDates = new Set(allAttendances.map(a => a.date));
@@ -653,6 +804,9 @@ const getStaffReport = async (req, res) => {
         const effectiveSalary = baseSalary + totalReward;
         const remainingSalary = Math.max(0, effectiveSalary - totalAdvance - deduction);
 
+        const tillDateBaseSalary = Math.round(daysPassedInMonth * dailyWage);
+        const tillDateRemaining = Math.max(0, tillDateBaseSalary + totalReward - totalAdvance - deduction);
+
         const payment = await SalaryPayment.findOne({ staff_id, month });
 
         res.json({
@@ -660,7 +814,8 @@ const getStaffReport = async (req, res) => {
             staff: {
                 name: staff.name,
                 email: staff.email,
-                baseSalary
+                baseSalary,
+                dailyWage: Math.round(dailyWage)
             },
             summary: {
                 daysInMonth,
@@ -671,6 +826,8 @@ const getStaffReport = async (req, res) => {
                 totalAdvance,
                 deduction,
                 remainingSalary,
+                tillDateBaseSalary,
+                tillDateRemaining,
                 isPaid: !!payment
             },
             attendanceList,
@@ -863,7 +1020,7 @@ module.exports = {
     getStaff, createStaff, updateStaff, deleteStaff,
     getSubadmins, createSubadmin, updateSubadmin, deleteSubadmin,
     assignTask, getGroupedTasks, recordFund, getFundsSummary, paySalary,
-    getAttendance, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
+    getAttendance, getAttendancePDF, getPredefinedTasks, createPredefinedTask, deletePredefinedTask,
     getDashboardStats, getAdvanceRequests, getAdvanceHistory, updateAdvanceRequest,
     verifyTask, getRevenueReports, getPendingVerificationTasks, getStaffReport, updateTask, deleteTask,
     getLeads, createLead, assignLead, updateLead, deleteLead,

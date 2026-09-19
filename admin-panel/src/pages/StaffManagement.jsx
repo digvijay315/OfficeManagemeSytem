@@ -23,7 +23,7 @@ export default function StaffManagement() {
   const [loadingUpload, setLoadingUpload] = useState("");
   const [editId, setEditId] = useState(null);
   const [formData, setFormData] = useState({ 
-    name: '', email: '', password: '', mobile: '', salary: '', 
+    name: '', email: '', password: '', mobile: '', salary: '', dailyWage: '', 
     address: '',
     documentName: '', documentNo: '',
     bankName: '', accountNo: '', ifscCode: '', branchName: '',
@@ -140,7 +140,7 @@ export default function StaffManagement() {
       }
       
       setFormData({ 
-        name: '', email: '', password: '', mobile: '', salary: '', 
+        name: '', email: '', password: '', mobile: '', salary: '', dailyWage: '', 
         address: '',
         documentName: '', documentNo: '',
         bankName: '', accountNo: '', ifscCode: '', branchName: '',
@@ -166,6 +166,7 @@ export default function StaffManagement() {
       mobile: staff.mobile || '',
       password: '',
       salary: staff.salary || '',
+      dailyWage: staff.dailyWage || '',
       address: staff.address || '',
       documentName: staff.documentName || '',
       documentNo: staff.documentNo || '',
@@ -235,7 +236,8 @@ export default function StaffManagement() {
             <InputField label="Email Address" icon={Mail} type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} required />
             <InputField label="Mobile Number" icon={Phone} type="text" value={formData.mobile} onChange={(e) => setFormData({...formData, mobile: e.target.value})} placeholder="e.g. 9876543210" />
             <InputField label="Password" icon={Lock} type="text" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} required={!editId} placeholder={editId ? "Leave blank to keep unchanged" : ""} />
-            <InputField label="Monthly Salary (₹)" icon={DollarSign} type="number" value={formData.salary} onChange={(e) => setFormData({...formData, salary: e.target.value})} required />
+            <InputField label="Base Monthly Salary (₹)" icon={DollarSign} type="number" value={formData.salary} onChange={(e) => setFormData({...formData, salary: e.target.value})} required />
+            <InputField label="Daily Wage / Income (₹)" icon={DollarSign} type="number" value={formData.dailyWage} onChange={(e) => setFormData({...formData, dailyWage: e.target.value})} placeholder="e.g. 500" />
             <InputField label="Joining Date" icon={Calendar} type="date" value={formData.joinedDate} onChange={(e) => setFormData({...formData, joinedDate: e.target.value})} required />
             <div className="md:col-span-2">
               <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2 flex items-center gap-2">
@@ -329,7 +331,7 @@ export default function StaffManagement() {
               onClick={() => {
                 setEditId(null);
                 setFormData({
-                  name: '', email: '', password: '', mobile: '', salary: '', 
+                  name: '', email: '', password: '', mobile: '', salary: '', dailyWage: '', 
                   address: '', documentName: '', documentNo: '',
                   bankName: '', accountNo: '', ifscCode: '', branchName: '',
                   joinedDate: new Date().toISOString().split('T')[0],
@@ -354,7 +356,7 @@ export default function StaffManagement() {
                 <th className="p-5 font-semibold border-b border-gray-200">Profile</th>
                 <th className="p-5 font-semibold border-b border-gray-200">Name & ID</th>
                 <th className="p-5 font-semibold border-b border-gray-200">Role</th>
-                <th className="p-5 font-semibold border-b border-gray-200">Salary</th>
+                <th className="p-5 font-semibold border-b border-gray-200">Salary & Daily Wage</th>
                 <th className="p-5 font-semibold border-b border-gray-200 text-right">Actions</th>
               </tr>
             </thead>
@@ -385,8 +387,9 @@ export default function StaffManagement() {
                       {staff.role}
                     </span>
                   </td>
-                  <td className="p-5 font-bold text-emerald-600 text-lg">
-                    ₹{staff.salary}
+                  <td className="p-5">
+                    <p className="font-bold text-emerald-600 text-lg">₹{staff.salary} <span className="text-xs text-gray-400 font-normal">/ month</span></p>
+                    {staff.dailyWage > 0 && <p className="text-sm font-semibold text-indigo-600">₹{staff.dailyWage} <span className="text-xs text-gray-400 font-normal">/ day</span></p>}
                   </td>
                   <td className="p-5 text-right">
                     <div className="flex justify-end gap-2">

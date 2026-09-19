@@ -6,6 +6,7 @@ const staffSchema = Joi.object({
     password: Joi.string().min(6).required(),
     mobile: Joi.string().optional().allow(''),
     salary: Joi.number().optional(),
+    dailyWage: Joi.number().optional(),
     Upload: Joi.object({
         pic: Joi.array().items(Joi.string()),
         document: Joi.array().items(Joi.string())
