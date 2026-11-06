@@ -29,7 +29,8 @@ const hideLoader = () => {
 const api = axios.create({
   // baseURL: 'http://localhost:5000/api',
   // baseURL:'https://api.snetdumka.com/api'
-  baseURL:'https://officemanagemesytem-nn6y.onrender.com/api'
+  // baseURL:'https://officemanagemesytem-nn6y.onrender.com/api'
+  baseURL:'https://officemanagemesytem.enzonic.dev/api'
 });
 
 // Add a request interceptor
