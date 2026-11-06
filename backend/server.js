@@ -13,7 +13,7 @@ const staffRoutes = require('./routes/staffRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 
 const app = express();
-const PORT = 3000;
+// const PORT = 5000;
 
 app.use(cors());
 app.use(express.json());
@@ -30,6 +30,12 @@ app.use('/api/upload', authMiddleware, uploadRoutes);
 app.use('/api/admin', authMiddleware, adminRoutes);
 app.use('/api/staff', authMiddleware, staffRoutes);
 
-app.listen(PORT, () => {
-    console.log(`Backend server running on http://localhost:${PORT}`);
+// app.listen(PORT, () => {
+//     console.log(`Backend server running on http://localhost:${PORT}`);
+// });
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Backend server running on port ${PORT}`);
 });
