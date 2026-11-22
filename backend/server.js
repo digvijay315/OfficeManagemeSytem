@@ -34,6 +34,10 @@ app.use('/api/staff', authMiddleware, staffRoutes);
 //     console.log(`Backend server running on http://localhost:${PORT}`);
 // });
 
+app.get("/health", (req, res) => {
+  res.status(200).send("Server is alive!");
+});
+
 const PORT = 3000;
 
 app.listen(PORT,  () => {
