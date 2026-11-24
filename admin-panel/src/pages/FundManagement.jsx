@@ -374,42 +374,42 @@ export default function FundManagement() {
     <div className="space-y-8 max-w-7xl mx-auto">
       
       {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-800 to-emerald-600 p-8 rounded-2xl shadow-lg text-white">
-        <h2 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-2">
+      <div className="bg-gradient-to-r from-emerald-800 to-emerald-600 p-5 sm:p-8 rounded-2xl shadow-lg text-white">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2 flex items-center gap-2">
           <Wallet size={28} /> Financial Management
         </h2>
-        <p className="text-emerald-100 mb-6">Manage monthly salaries, approve advance requests, and view payment history.</p>
+        <p className="text-xs sm:text-sm text-emerald-100 mb-5">Manage monthly salaries, approve advance requests, and view payment history.</p>
         
-        {/* Navigation Tabs */}
-        <div className="flex gap-2 border-b border-emerald-500/30 pb-0">
+        {/* Navigation Tabs - Responsive with smooth touch scrolling */}
+        <div className="flex gap-2 border-b border-emerald-500/30 pb-0 overflow-x-auto scrollbar-hide -mx-2 px-2 sm:mx-0 sm:px-0">
           <button 
             onClick={() => setActiveTab('salary')}
-            className={`px-6 py-3 font-semibold text-sm rounded-t-lg transition-colors ${activeTab === 'salary' ? 'bg-white text-emerald-800' : 'text-emerald-100 hover:bg-emerald-700 hover:text-white'}`}
+            className={`px-4 sm:px-6 py-2.5 sm:py-3 font-semibold text-xs sm:text-sm rounded-t-lg transition-colors whitespace-nowrap shrink-0 ${activeTab === 'salary' ? 'bg-white text-emerald-800 shadow-sm' : 'text-emerald-100 hover:bg-emerald-700 hover:text-white'}`}
           >
             Salary Overview
           </button>
           <button 
             onClick={() => setActiveTab('requests')}
-            className={`flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-t-lg transition-colors ${activeTab === 'requests' ? 'bg-white text-emerald-800' : 'text-emerald-100 hover:bg-emerald-700 hover:text-white'}`}
+            className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 font-semibold text-xs sm:text-sm rounded-t-lg transition-colors whitespace-nowrap shrink-0 ${activeTab === 'requests' ? 'bg-white text-emerald-800 shadow-sm' : 'text-emerald-100 hover:bg-emerald-700 hover:text-white'}`}
           >
             Advance Requests
-            {requests.length > 0 && <span className="bg-amber-400 text-emerald-900 px-2 py-0.5 rounded-full text-xs">{requests.length}</span>}
+            {requests.length > 0 && <span className="bg-amber-400 text-emerald-900 px-2 py-0.5 rounded-full text-xs font-bold">{requests.length}</span>}
           </button>
           <button 
             onClick={() => setActiveTab('history')}
-            className={`px-6 py-3 font-semibold text-sm rounded-t-lg transition-colors ${activeTab === 'history' ? 'bg-white text-emerald-800' : 'text-emerald-100 hover:bg-emerald-700 hover:text-white'}`}
+            className={`px-4 sm:px-6 py-2.5 sm:py-3 font-semibold text-xs sm:text-sm rounded-t-lg transition-colors whitespace-nowrap shrink-0 ${activeTab === 'history' ? 'bg-white text-emerald-800 shadow-sm' : 'text-emerald-100 hover:bg-emerald-700 hover:text-white'}`}
           >
             Advance History
           </button>
           <button 
             onClick={() => setActiveTab('revenue')}
-            className={`px-6 py-3 font-semibold text-sm rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'revenue' ? 'bg-white text-emerald-800' : 'text-emerald-100 hover:bg-emerald-700 hover:text-white'}`}
+            className={`px-4 sm:px-6 py-2.5 sm:py-3 font-semibold text-xs sm:text-sm rounded-t-lg transition-colors flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${activeTab === 'revenue' ? 'bg-white text-emerald-800 shadow-sm' : 'text-emerald-100 hover:bg-emerald-700 hover:text-white'}`}
           >
             <ArrowDownRight size={16} /> Revenue & Income
           </button>
           <button 
             onClick={() => setActiveTab('expense')}
-            className={`px-6 py-3 font-semibold text-sm rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'expense' ? 'bg-white text-emerald-800' : 'text-emerald-100 hover:bg-emerald-700 hover:text-white'}`}
+            className={`px-4 sm:px-6 py-2.5 sm:py-3 font-semibold text-xs sm:text-sm rounded-t-lg transition-colors flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${activeTab === 'expense' ? 'bg-white text-emerald-800 shadow-sm' : 'text-emerald-100 hover:bg-emerald-700 hover:text-white'}`}
           >
             <ArrowUpRight size={16} /> Expenses
           </button>
@@ -419,9 +419,9 @@ export default function FundManagement() {
       {/* SALARY OVERVIEW TAB */}
       {activeTab === 'salary' && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-300">
-          <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-            <h3 className="text-xl font-bold text-gray-800">Payment Breakdown</h3>
-            <div className="bg-white px-4 py-2 border border-gray-200 rounded-xl shadow-sm flex items-center gap-3">
+          <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-gray-50/50">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800">Payment Breakdown</h3>
+            <div className="bg-white px-3 sm:px-4 py-2 border border-gray-200 rounded-xl shadow-sm flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-start">
               <Calendar size={20} className="text-emerald-600" />
               <input 
                 type="month" 

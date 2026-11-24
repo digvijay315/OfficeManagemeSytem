@@ -509,12 +509,20 @@ const deletePredefinedTask = async (req, res) => {
 const getDashboardStats = async (req, res) => {
     try {
         const today = new Date().toISOString().split('T')[0];
+        const currentMonth = today.substring(0, 7); // 'YYYY-MM'
         
         // Stats for top cards
         const staffCount = await User.countDocuments({ role: 'staff' });
         const taskCount = await Task.countDocuments({ date: today });
         const attendanceCount = await Attendance.countDocuments({ date: today });
         const emergencyCount = await Task.countDocuments({ status: 'pending', type: 'additional' });
+        
+        // Fetch current month expenses
+        const expenseMonthAgg = await Expense.aggregate([
+            { $match: { date: { $regex: `^${currentMonth}` } } },
+            { $group: { _id: null, total: { $sum: "$amount" } } }
+        ]);
+        const totalExpense = expenseMonthAgg.length > 0 ? expenseMonthAgg[0].total : 0;
         
         // For charts: Last 7 days data
         const d = new Date();
@@ -554,6 +562,7 @@ const getDashboardStats = async (req, res) => {
             taskCount,
             attendanceCount,
             emergencyCount,
+            totalExpense,
             charts: {
                 attendance: formatAttendanceChart,
                 taskCompletion: taskCompletionChart

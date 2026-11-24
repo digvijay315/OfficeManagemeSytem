@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
-import { Users, ClipboardList, AlertCircle, CalendarCheck, BarChart3 } from 'lucide-react';
+import { Users, ClipboardList, AlertCircle, CalendarCheck, BarChart3, IndianRupee } from 'lucide-react';
+import { format } from 'date-fns';
+import { Link } from 'react-router-dom';
 import { showLoader, closeLoader, showAlert } from '../utils/swalUtils';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({ staffCount: 0, taskCount: 0, attendanceCount: 0, emergencyCount: 0 });
+  const [stats, setStats] = useState({ staffCount: 0, taskCount: 0, attendanceCount: 0, emergencyCount: 0, totalExpense: 0 });
   const [charts, setCharts] = useState({ attendance: [], taskCompletion: [] });
 
   useEffect(() => {
@@ -17,7 +19,8 @@ export default function Dashboard() {
           staffCount: res.data.staffCount || 0,
           taskCount: res.data.taskCount || 0,
           attendanceCount: res.data.attendanceCount || 0,
-          emergencyCount: res.data.emergencyCount || 0
+          emergencyCount: res.data.emergencyCount || 0,
+          totalExpense: res.data.totalExpense || 0
         });
         setCharts(res.data.charts || { attendance: [], taskCompletion: [] });
         closeLoader();
@@ -46,7 +49,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         <div className="bg-white p-6 rounded-xl border border-indigo-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="w-14 h-14 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
             <Users size={28} />
@@ -86,6 +89,26 @@ export default function Dashboard() {
             <p className="text-3xl font-bold text-gray-800">{stats.emergencyCount}</p>
           </div>
         </div>
+
+        {/* Total Expenses Card - Styled like Revenue Reports */}
+        <Link 
+          to="/revenue-reports"
+          title="Click to view Revenue & Expense Reports"
+          className="bg-gradient-to-br from-red-500 to-rose-600 rounded-xl p-6 text-white shadow-md hover:shadow-xl transition-all relative overflow-hidden flex flex-col justify-between group cursor-pointer"
+        >
+          <div className="relative z-10">
+            <p className="text-red-100 font-medium text-sm mb-1">Total Expenses</p>
+            <h3 className="text-3xl font-bold flex items-center gap-1.5">
+              <IndianRupee size={28} /> {Number(stats.totalExpense || 0).toLocaleString('en-IN')}
+            </h3>
+            <p className="text-xs mt-4 text-red-50 bg-white/20 inline-block px-2.5 py-1 rounded-full font-medium">
+              {format(new Date(), 'MMMM yyyy')}
+            </p>
+          </div>
+          <div className="absolute right-0 bottom-0 opacity-10 group-hover:scale-110 transition-transform pointer-events-none">
+            <IndianRupee size={120} className="-mr-6 -mb-6" />
+          </div>
+        </Link>
       </div>
       
       {/* Chart Area */}

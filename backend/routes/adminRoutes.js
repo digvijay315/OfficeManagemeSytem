@@ -12,6 +12,14 @@ const {
     getIncomes, getPendingIncomeCount, createIncome, updateIncome, deleteIncome,
     getExpenses, createExpense, updateExpense, deleteExpense
 } = require('../controllers/adminController');
+const {
+    getProjects,
+    getProjectStats,
+    getProjectById,
+    createProject,
+    updateProject,
+    deleteProject
+} = require('../controllers/projectController');
 
 const router = express.Router();
 
@@ -75,5 +83,13 @@ router.get('/expenses', getExpenses);
 router.post('/expenses', createExpense);
 router.put('/expenses/:id', updateExpense);
 router.delete('/expenses/:id', deleteExpense);
+
+// Project Management Routes
+router.get('/projects/stats', getProjectStats);
+router.get('/projects', getProjects);
+router.get('/projects/:id', getProjectById);
+router.post('/projects', createProject);
+router.put('/projects/:id', updateProject);
+router.delete('/projects/:id', deleteProject);
 
 module.exports = router;

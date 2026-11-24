@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Users, ClipboardList, Wallet, Calendar, LogOut, Menu, X, LayoutDashboard, ListPlus, CheckSquare, ChevronDown, Shield } from 'lucide-react';
+import { Users, ClipboardList, Wallet, Calendar, LogOut, Menu, X, LayoutDashboard, ListPlus, CheckSquare, ChevronDown, Shield, FolderKanban } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { showConfirm } from '../utils/swalUtils';
 
@@ -119,6 +119,7 @@ export default function Layout() {
 
   const navItems = [
     { path: '/dashboard', name: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+    { path: '/projects', name: 'My Projects', icon: <FolderKanban size={20} /> },
     { path: '/subadmins', name: 'Manage Subadmin', icon: <Shield size={20} /> },
     { path: '/staff', name: 'Manage Staff', icon: <Users size={20} /> },
     { path: '/leads', name: 'Leads', icon: <ClipboardList size={20} /> },
