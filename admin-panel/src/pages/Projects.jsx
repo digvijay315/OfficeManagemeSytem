@@ -9,11 +9,176 @@ import {
   FileText, Layers, AlertCircle
 } from 'lucide-react';
 
-const PROJECT_TYPES = ['Website', 'Mobile App', 'Software', 'Web Application', 'E-Commerce', 'Desktop App', 'Other'];
-const CATEGORIES = ['Hospital', 'Shop', 'College', 'School', 'Restaurant', 'Corporate', 'Real Estate', 'Coaching', 'NGO', 'Other'];
+const PROJECT_TYPES = [
+  'Website',
+  'Mobile App',
+  'Software',
+  'Web Application',
+  'E-Commerce',
+  'CCTV SALE & SERVICE',
+  'AMC SERVICES',
+  'INTERNET & WIFI SERVICES',
+  'INTERCOM SERVICES',
+  'FIRE ALAM',
+  'Networking Solutions',
+  'Desktop App',
+  'Other'
+];
+
+const TYPE_CATEGORIES = {
+  'CCTV SALE & SERVICE': [
+    'Shop / Showroom',
+    'Hospital / Healthcare',
+    'School / College',
+    'Residential / Society',
+    'Office / Corporate',
+    'Factory / Warehouse',
+    'Hotel / Restaurant',
+    'Bank / ATM',
+    'Government / Public',
+    'Other'
+  ],
+  'AMC SERVICES': [
+    'Comprehensive Office AMC',
+    'CCTV & Surveillance AMC',
+    'Computer & Hardware AMC',
+    'Networking & Server AMC',
+    'Intercom & EPABX AMC',
+    'Fire Alarm AMC',
+    'Hospital & Healthcare AMC',
+    'School & College AMC',
+    'Hotel & Commercial AMC',
+    'Other'
+  ],
+  'INTERNET & WIFI SERVICES': [
+    'Corporate / Enterprise Office',
+    'Hotel & Resort',
+    'Hospital & Clinic',
+    'School & College Campus',
+    'Residential Society / Home Broadband',
+    'Cafe / Restaurant',
+    'Co-working Space',
+    'Shop / Commercial Complex',
+    'Government Office',
+    'Other'
+  ],
+  'INTERCOM SERVICES': [
+    'Residential Apartment / Society',
+    'Hospital & Clinic',
+    'Corporate Office / Business',
+    'School & College',
+    'Hotel & Resort',
+    'Factory & Plant',
+    'Other'
+  ],
+  'FIRE ALAM': [
+    'Hospital & Healthcare',
+    'Hotel & Banquet',
+    'Commercial Complex & Mall',
+    'Factory & Industrial Plant',
+    'School & College',
+    'Residential Apartment / Society',
+    'Corporate Building',
+    'Warehouse & Godown',
+    'Other'
+  ],
+  'Networking Solutions': [
+    'Corporate LAN / WAN Office',
+    'Data Center / Server Room',
+    'Hospital & Medical Center',
+    'School / College Lab & Campus',
+    'Hotel / Hospitality Network',
+    'Bank Branch & ATM Link',
+    'Industrial / Factory Network',
+    'Fiber Optic Cabling & Splicing',
+    'Other'
+  ],
+  'Website': [
+    'Hospital',
+    'Shop',
+    'College',
+    'School',
+    'Restaurant',
+    'Corporate',
+    'Real Estate',
+    'Coaching',
+    'NGO',
+    'Other'
+  ],
+  'Mobile App': [
+    'Hospital',
+    'Shop',
+    'College',
+    'School',
+    'Restaurant',
+    'Corporate',
+    'Real Estate',
+    'Coaching',
+    'NGO',
+    'Other'
+  ],
+  'Software': [
+    'Hospital',
+    'Shop',
+    'College',
+    'School',
+    'Restaurant',
+    'Corporate',
+    'Billing / POS',
+    'Accounting',
+    'Other'
+  ],
+  'Web Application': [
+    'Hospital',
+    'Shop',
+    'College',
+    'School',
+    'Corporate',
+    'Portal',
+    'Government',
+    'Other'
+  ],
+  'E-Commerce': [
+    'Retail Shop',
+    'Supermarket / Grocery',
+    'Wholesale',
+    'Corporate',
+    'Other'
+  ],
+  'Desktop App': [
+    'Hospital',
+    'Pharmacy',
+    'Shop / POS',
+    'School / College',
+    'Accounting',
+    'Other'
+  ],
+  'Other': [
+    'Hospital',
+    'Shop',
+    'College',
+    'School',
+    'Restaurant',
+    'Corporate',
+    'Residential / Society',
+    'Factory / Warehouse',
+    'Bank',
+    'Other'
+  ]
+};
+
+// Master list of all unique categories for top filter dropdown
+const CATEGORIES = Array.from(new Set(Object.values(TYPE_CATEGORIES).flat()));
+
 const STATUSES = ['In Progress', 'Live', 'Completed', 'Maintenance', 'On Hold', 'Cancelled'];
 const DURATIONS = ['6 Months', '1 Year', '2 Years', '3 Years', '5 Years', 'Lifetime'];
 const SERVICE_TYPES = [
+  'CCTV SALE & SERVICE',
+  'AMC SERVICES',
+  'INTERNET & WIFI SERVICES',
+  'INTERCOM SERVICES',
+  'FIRE ALAM',
+  'Networking Solutions',
   'Domain',
   'Server / Hosting Renewal',
   'AMC Renewal',
@@ -918,7 +1083,15 @@ export default function Projects() {
                     </label>
                     <select
                       value={formData.projectType}
-                      onChange={(e) => setFormData({ ...formData, projectType: e.target.value })}
+                      onChange={(e) => {
+                        const newType = e.target.value;
+                        const relevantCats = TYPE_CATEGORIES[newType] || CATEGORIES;
+                        setFormData(prev => ({
+                          ...prev,
+                          projectType: newType,
+                          category: relevantCats.includes(prev.category) ? prev.category : (relevantCats[0] || 'Other')
+                        }));
+                      }}
                       className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                     >
                       {PROJECT_TYPES.map(t => (
@@ -937,9 +1110,12 @@ export default function Projects() {
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                     >
-                      {CATEGORIES.map(c => (
+                      {(TYPE_CATEGORIES[formData.projectType] || CATEGORIES).map(c => (
                         <option key={c} value={c}>{c}</option>
                       ))}
+                      {formData.category && !(TYPE_CATEGORIES[formData.projectType] || CATEGORIES).includes(formData.category) && (
+                        <option value={formData.category}>{formData.category}</option>
+                      )}
                     </select>
                   </div>
 

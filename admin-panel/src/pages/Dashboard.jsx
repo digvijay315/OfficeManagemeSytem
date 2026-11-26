@@ -1,14 +1,26 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
-import { Users, ClipboardList, AlertCircle, CalendarCheck, BarChart3, IndianRupee } from 'lucide-react';
-import { format } from 'date-fns';
+import { 
+  Users, ClipboardList, AlertCircle, CalendarCheck, BarChart3, 
+  Zap, Receipt, FolderPlus, PlusCircle, UserPlus, CheckSquare, X 
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { showLoader, closeLoader, showAlert } from '../utils/swalUtils';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({ staffCount: 0, taskCount: 0, attendanceCount: 0, emergencyCount: 0, totalExpense: 0 });
+  const [stats, setStats] = useState({ staffCount: 0, taskCount: 0, attendanceCount: 0, emergencyCount: 0 });
   const [charts, setCharts] = useState({ attendance: [], taskCompletion: [] });
+  const [staffList, setStaffList] = useState([]);
+
+  // Quick Action: Expense Modal State
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [expenseForm, setExpenseForm] = useState({
+    reason: '',
+    staff_id: '',
+    amount: '',
+    date: new Date().toISOString().split('T')[0]
+  });
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -19,8 +31,7 @@ export default function Dashboard() {
           staffCount: res.data.staffCount || 0,
           taskCount: res.data.taskCount || 0,
           attendanceCount: res.data.attendanceCount || 0,
-          emergencyCount: res.data.emergencyCount || 0,
-          totalExpense: res.data.totalExpense || 0
+          emergencyCount: res.data.emergencyCount || 0
         });
         setCharts(res.data.charts || { attendance: [], taskCompletion: [] });
         closeLoader();
@@ -29,8 +40,47 @@ export default function Dashboard() {
         showAlert('Error', 'Failed to load dashboard data', 'error');
       }
     };
+
+    const fetchStaff = async () => {
+      try {
+        const res = await api.get('/admin/staff?limit=100');
+        setStaffList(res.data.data || []);
+      } catch (err) {
+        console.error('Error fetching staff list');
+      }
+    };
+
     fetchStats();
+    fetchStaff();
   }, []);
+
+  const handleExpenseSubmit = async (e) => {
+    e.preventDefault();
+    if (!expenseForm.reason.trim() || !expenseForm.amount) {
+      showAlert('Validation Error', 'Please enter reason and amount', 'warning');
+      return;
+    }
+
+    showLoader('Saving Expense', 'Recording expense in records...');
+    try {
+      const payload = {
+        reason: expenseForm.reason.trim(),
+        amount: Number(expenseForm.amount),
+        date: expenseForm.date
+      };
+      if (expenseForm.staff_id && expenseForm.staff_id !== 'none') {
+        payload.staff_id = expenseForm.staff_id;
+      }
+      await api.post('/admin/expenses', payload);
+      closeLoader();
+      showAlert('Success', 'Expense recorded successfully!', 'success');
+      setIsExpenseModalOpen(false);
+      setExpenseForm({ reason: '', staff_id: '', amount: '', date: new Date().toISOString().split('T')[0] });
+    } catch (err) {
+      closeLoader();
+      showAlert('Error', err.response?.data?.error || 'Failed to save expense', 'error');
+    }
+  };
 
   const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
 
@@ -49,7 +99,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      {/* Top 4 Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-xl border border-indigo-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="w-14 h-14 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
             <Users size={28} />
@@ -89,26 +140,98 @@ export default function Dashboard() {
             <p className="text-3xl font-bold text-gray-800">{stats.emergencyCount}</p>
           </div>
         </div>
+      </div>
 
-        {/* Total Expenses Card - Styled like Revenue Reports */}
-        <Link 
-          to="/revenue-reports"
-          title="Click to view Revenue & Expense Reports"
-          className="bg-gradient-to-br from-red-500 to-rose-600 rounded-xl p-6 text-white shadow-md hover:shadow-xl transition-all relative overflow-hidden flex flex-col justify-between group cursor-pointer"
-        >
-          <div className="relative z-10">
-            <p className="text-red-100 font-medium text-sm mb-1">Total Expenses</p>
-            <h3 className="text-3xl font-bold flex items-center gap-1.5">
-              <IndianRupee size={28} /> {Number(stats.totalExpense || 0).toLocaleString('en-IN')}
-            </h3>
-            <p className="text-xs mt-4 text-red-50 bg-white/20 inline-block px-2.5 py-1 rounded-full font-medium">
-              {format(new Date(), 'MMMM yyyy')}
-            </p>
+      {/* Quick Actions Bar */}
+      <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+              <Zap size={18} />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-800 text-base">Quick Actions</h3>
+              <p className="text-xs text-gray-400">Direct shortcuts for frequent admin operations</p>
+            </div>
           </div>
-          <div className="absolute right-0 bottom-0 opacity-10 group-hover:scale-110 transition-transform pointer-events-none">
-            <IndianRupee size={120} className="-mr-6 -mb-6" />
-          </div>
-        </Link>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {/* 1. Add New Expense (Opens Modal) */}
+          <button
+            onClick={() => {
+              setExpenseForm({ reason: '', staff_id: '', amount: '', date: new Date().toISOString().split('T')[0] });
+              setIsExpenseModalOpen(true);
+            }}
+            className="flex flex-col items-center justify-center p-4 rounded-xl border border-rose-100 bg-rose-50/40 hover:bg-rose-100/70 text-rose-700 hover:border-rose-300 transition-all cursor-pointer group shadow-2xs hover:shadow-sm"
+          >
+            <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-xs">
+              <Receipt size={20} />
+            </div>
+            <span className="text-xs font-bold text-gray-800 group-hover:text-rose-700 text-center">Add Expense</span>
+            <span className="text-[10px] text-gray-500 text-center mt-0.5">Record office spend</span>
+          </button>
+
+          {/* 2. New Project */}
+          <Link
+            to="/projects"
+            className="flex flex-col items-center justify-center p-4 rounded-xl border border-indigo-100 bg-indigo-50/40 hover:bg-indigo-100/70 text-indigo-700 hover:border-indigo-300 transition-all cursor-pointer group shadow-2xs hover:shadow-sm"
+          >
+            <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-xs">
+              <FolderPlus size={20} />
+            </div>
+            <span className="text-xs font-bold text-gray-800 group-hover:text-indigo-700 text-center">New Project</span>
+            <span className="text-[10px] text-gray-500 text-center mt-0.5">CCTV / IT / Web</span>
+          </Link>
+
+          {/* 3. Assign Task */}
+          <Link
+            to="/tasks"
+            className="flex flex-col items-center justify-center p-4 rounded-xl border border-blue-100 bg-blue-50/40 hover:bg-blue-100/70 text-blue-700 hover:border-blue-300 transition-all cursor-pointer group shadow-2xs hover:shadow-sm"
+          >
+            <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-xs">
+              <PlusCircle size={20} />
+            </div>
+            <span className="text-xs font-bold text-gray-800 group-hover:text-blue-700 text-center">Assign Task</span>
+            <span className="text-[10px] text-gray-500 text-center mt-0.5">To staff / tech</span>
+          </Link>
+
+          {/* 4. New Lead */}
+          <Link
+            to="/leads"
+            className="flex flex-col items-center justify-center p-4 rounded-xl border border-amber-100 bg-amber-50/40 hover:bg-amber-100/70 text-amber-700 hover:border-amber-300 transition-all cursor-pointer group shadow-2xs hover:shadow-sm"
+          >
+            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-xs">
+              <UserPlus size={20} />
+            </div>
+            <span className="text-xs font-bold text-gray-800 group-hover:text-amber-700 text-center">New Lead</span>
+            <span className="text-[10px] text-gray-500 text-center mt-0.5">Customer inquiry</span>
+          </Link>
+
+          {/* 5. Verify Tasks */}
+          <Link
+            to="/task-verification"
+            className="flex flex-col items-center justify-center p-4 rounded-xl border border-emerald-100 bg-emerald-50/40 hover:bg-emerald-100/70 text-emerald-700 hover:border-emerald-300 transition-all cursor-pointer group shadow-2xs hover:shadow-sm"
+          >
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-xs">
+              <CheckSquare size={20} />
+            </div>
+            <span className="text-xs font-bold text-gray-800 group-hover:text-emerald-700 text-center">Verify Tasks</span>
+            <span className="text-[10px] text-gray-500 text-center mt-0.5">Approve rewards</span>
+          </Link>
+
+          {/* 6. Manage Staff */}
+          <Link
+            to="/staff"
+            className="flex flex-col items-center justify-center p-4 rounded-xl border border-purple-100 bg-purple-50/40 hover:bg-purple-100/70 text-purple-700 hover:border-purple-300 transition-all cursor-pointer group shadow-2xs hover:shadow-sm"
+          >
+            <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-xs">
+              <Users size={20} />
+            </div>
+            <span className="text-xs font-bold text-gray-800 group-hover:text-purple-700 text-center">Manage Staff</span>
+            <span className="text-[10px] text-gray-500 text-center mt-0.5">Add & attendance</span>
+          </Link>
+        </div>
       </div>
       
       {/* Chart Area */}
@@ -161,6 +284,112 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* ADD EXPENSE MODAL */}
+      {isExpenseModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100">
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shadow-xs">
+                  <Receipt size={22} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Add New Expense</h3>
+                  <p className="text-xs text-gray-500">Record an office or staff expense</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsExpenseModalOpen(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleExpenseSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Expense Reason / Description <span className="text-rose-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="e.g. Petrol allowance, Cable purchase, Office tea"
+                  value={expenseForm.reason}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, reason: e.target.value })}
+                  className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Amount (₹) <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">₹</span>
+                  <input 
+                    type="number" 
+                    required
+                    min="1"
+                    placeholder="e.g. 500"
+                    value={expenseForm.amount}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                    className="w-full pl-8 pr-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Date <span className="text-rose-500">*</span>
+                  </label>
+                  <input 
+                    type="date" 
+                    required
+                    value={expenseForm.date}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, date: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Staff / Person (Optional)
+                  </label>
+                  <select 
+                    value={expenseForm.staff_id}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, staff_id: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none bg-white"
+                  >
+                    <option value="">Self / Office</option>
+                    {staffList.map(s => (
+                      <option key={s._id} value={s._id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsExpenseModalOpen(false)}
+                  className="px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md shadow-rose-200 transition cursor-pointer"
+                >
+                  Save Expense
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
